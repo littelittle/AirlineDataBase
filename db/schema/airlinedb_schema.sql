@@ -71,7 +71,9 @@ CREATE TABLE TicketSale (
     FOREIGN KEY (CabinPricingID) REFERENCES CabinPricing(PricingID)
 );
 
+DELIMITER //
 
+-- 创建 CheckOverbooking 触发器
 CREATE TRIGGER CheckOverbooking
 BEFORE INSERT ON TicketSale
 FOR EACH ROW
@@ -80,52 +82,79 @@ BEGIN
     DECLARE SoldEconomySeats INT;
     DECLARE AvailableFirstClassSeats INT;
     DECLARE AvailableEconomySeats INT;
-    
-    -- 获取已售出的头等舱和经济舱座位数
-    SELECT 
-        (SELECT COUNT(*) FROM TicketSale ts
-         JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
-         WHERE cp.FlightID = NEW.FlightID AND cp.CabinLevel = 'Firstclass' AND ts.FlightDate = NEW.FlightDate) INTO SoldFirstClassSeats,
-        
-        (SELECT COUNT(*) FROM TicketSale ts
-         JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
-         WHERE cp.FlightID = NEW.FlightID AND cp.CabinLevel = 'Economy' AND ts.FlightDate = NEW.FlightDate) INTO SoldEconomySeats;
-    
+    DECLARE FlightIDForCheck CHAR(20);
+    DECLARE TicketCabinLevel VARCHAR(20);
+
+    -- 通过 CabinPricingID 获取 FlightID
+    SELECT FlightID 
+    INTO FlightIDForCheck
+    FROM CabinPricing
+    WHERE PricingID = NEW.CabinPricingID;
+
+    -- 通过 CabinPricingID 获取 CabinLevel
+    SELECT CabinLevel 
+    INTO TicketCabinLevel
+    FROM CabinPricing
+    WHERE PricingID = NEW.CabinPricingID;
+
+    -- 获取已售出的头等舱座位数
+    SELECT COUNT(*) 
+    INTO SoldFirstClassSeats
+    FROM TicketSale ts
+    JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
+    WHERE cp.FlightID = FlightIDForCheck AND cp.CabinLevel = 'Firstclass' AND ts.FlightDate = NEW.FlightDate;
+
+    -- 获取已售出的经济舱座位数
+    SELECT COUNT(*) 
+    INTO SoldEconomySeats
+    FROM TicketSale ts
+    JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
+    WHERE cp.FlightID = FlightIDForCheck AND cp.CabinLevel = 'Economy' AND ts.FlightDate = NEW.FlightDate;
+
     -- 获取航班的座位数
-    SELECT FirstClassSeats, EconomySeats INTO AvailableFirstClassSeats, AvailableEconomySeats
+    SELECT FirstClassSeats, EconomySeats 
+    INTO AvailableFirstClassSeats, AvailableEconomySeats
     FROM Flight
-    WHERE FlightID = NEW.FlightID;
-    
+    WHERE FlightID = FlightIDForCheck;
+
     -- 判断是否超售
-    IF (NEW.CabinLevel = 'Firstclass' AND SoldFirstClassSeats >= AvailableFirstClassSeats) THEN
+    IF (TicketCabinLevel = 'Firstclass' AND SoldFirstClassSeats >= AvailableFirstClassSeats) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '头等舱座位已售完，无法完成售票';
     END IF;
-    
-    IF (NEW.CabinLevel = 'Economy' AND SoldEconomySeats >= AvailableEconomySeats) THEN
+
+    IF (TicketCabinLevel = 'Economy' AND SoldEconomySeats >= AvailableEconomySeats) THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '经济舱座位已售完，无法完成售票';
     END IF;
-END;
+END //
 
-
+-- 创建 CheckAirportOrder 触发器
 CREATE TRIGGER CheckAirportOrder
 BEFORE INSERT ON CabinPricing
 FOR EACH ROW
 BEGIN
     DECLARE DepartureStopOrder INT;
     DECLARE ArrivalStopOrder INT;
-    
+    DECLARE FlightIDForCheck CHAR(20);
+
+    -- 获取当前插入记录的 FlightID
+    SET FlightIDForCheck = NEW.FlightID;
+
     -- 获取出发机场的停靠顺序
-    SELECT StopOrder INTO DepartureStopOrder
+    SELECT StopOrder 
+    INTO DepartureStopOrder
     FROM Flight_Airport
-    WHERE FlightID = NEW.FlightID AND AirportCode = NEW.DepartureAirportID;
-    
+    WHERE FlightID = FlightIDForCheck AND AirportCode = NEW.DepartureAirportID;
+
     -- 获取到达机场的停靠顺序
-    SELECT StopOrder INTO ArrivalStopOrder
+    SELECT StopOrder 
+    INTO ArrivalStopOrder
     FROM Flight_Airport
-    WHERE FlightID = NEW.FlightID AND AirportCode = NEW.ArrivalAirportID;
-    
+    WHERE FlightID = FlightIDForCheck AND AirportCode = NEW.ArrivalAirportID;
+
     -- 检查出发机场的顺序是否小于到达机场的顺序
     IF DepartureStopOrder >= ArrivalStopOrder THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '出发机场的顺序必须小于到达机场的顺序';
     END IF;
-END;
+END //
+
+DELIMITER ;    
