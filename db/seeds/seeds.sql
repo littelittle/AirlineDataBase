@@ -20,11 +20,11 @@ INSERT INTO Flight_Airport (FlightID, AirportCode, StopOrder) VALUES
 ('MU456', 'SHA', 1),
 ('MU456', 'CAN', 2);
 
-INSERT INTO CabinPricing (FlightID, DepartureAirportID, ArrivalAirportID, CabinLevel, Price) VALUES
-('CA123', 'PEK', 'SHA', 'Firstclass', 1500.00),
-('CA123', 'PEK', 'SHA', 'Economy', 800.00),
-('MU456', 'SHA', 'CAN', 'Firstclass', 1800.00),
-('MU456', 'SHA', 'CAN', 'Economy', 900.00);
+INSERT INTO CabinPricing (FlightID, DepartureAirportID, ArrivalAirportID, CabinLevel, Price, DiscountRate) VALUES
+('CA123', 'PEK', 'SHA', 'Firstclass', 1500.00, 0),
+('CA123', 'PEK', 'SHA', 'Economy', 800.00, 0),
+('MU456', 'SHA', 'CAN', 'Firstclass', 1800.00, 0),
+('MU456', 'SHA', 'CAN', 'Economy', 900.00, 0);
 
 INSERT INTO Passenger (IDNumber, PassengerName) VALUES
 ('123456789012345678', 'Zhang San'),
