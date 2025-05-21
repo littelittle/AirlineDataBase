@@ -1,33 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Box, TextField, Button, Typography, Autocomplete, Alert } from '@mui/material';
 
 const AirportSelection = () => {
-  const [departureAirport, setDepartureAirport] = useState('');
-  const [arrivalAirport, setArrivalAirport] = useState('');
-  const navigate = useNavigate();
+    const [departureAirport, setDepartureAirport] = useState(null);
+    const [arrivalAirport, setArrivalAirport] = useState(null);
+    const [airports, setAirports] = useState([]);
+    const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    navigate(`/passenger/products?departure=${departureAirport}&arrival=${arrivalAirport}`);
-  };
+    useEffect(() => {
+        axios.get(`${process.env.REACT_APP_API_URL}/api/passenger/airports`)
+            .then(response => {
+                setAirports(response.data || []);
+                setError(null);
+            })
+            .catch(error => {
+                console.error('获取机场失败', error);
+                setError('无法加载机场数据，请稍后重试');
+            });
+    }, []);
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="出发机场"
-        value={departureAirport}
-        onChange={(e) => setDepartureAirport(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="到达机场"
-        value={arrivalAirport}
-        onChange={(e) => setArrivalAirport(e.target.value)}
-      />
-      <button type="submit">查询产品</button>
-    </form>
-  );
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!departureAirport || !arrivalAirport) {
+            setError('请选择出发和到达机场');
+            return;
+        }
+        if (departureAirport.AirportCode === arrivalAirport.AirportCode) {
+            setError('出发和到达机场不能相同');
+            return;
+        }
+        navigate(`/passenger/products?departure=${departureAirport.AirportCode}&arrival=${arrivalAirport.AirportCode}`);
+    };
+
+    return (
+        <Box sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>选择出发和到达机场</Typography>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {airports.length === 0 && !error && (
+                <Typography sx={{ mb: 2 }}>暂无机场数据</Typography>
+            )}
+            <Box component="form" onSubmit={handleSubmit}>
+                <Autocomplete
+                    options={airports}
+                    getOptionLabel={(option) => `${option.Name} (${option.AirportCode})`}
+                    value={departureAirport}
+                    onChange={(e, value) => setDepartureAirport(value)}
+                    renderInput={(params) => <TextField {...params} label="出发机场" margin="normal" fullWidth />}
+                />
+                <Autocomplete
+                    options={airports}
+                    getOptionLabel={(option) => `${option.Name} (${option.AirportCode})`}
+                    value={arrivalAirport}
+                    onChange={(e, value) => setArrivalAirport(value)}
+                    renderInput={(params) => <TextField {...params} label="到达机场" margin="normal" fullWidth />}
+                />
+                <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+                    查询航班
+                </Button>
+            </Box>
+        </Box>
+    );
 };
 
-export default AirportSelection;    
+export default AirportSelection;

@@ -18,6 +18,7 @@ cat db\schema\airlinedb_schema.sql | mysql -u root -p
 
 ```terminal
 cd frontend
+npm install
 npm start
 ```
 
@@ -54,5 +55,19 @@ flask run
 
 temporary websites `http://localhost:3000/admin` and `http://localhost:3000/passenger`
 
+### connection issues
 
+The mysql-connector-python does not support MySQL 8.x's default authentication plugin caching_sha2_password, causing database query failures. (Respones may be `{"error":"Authentication plugin 'caching_sha2_password' is not supported"}`)
 
+You may change the MySQL user's authentication method​​:
+
+```SQL
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your_password';
+FLUSH PRIVILEGES;
+```
+
+```terminal
+pip install --upgrade mysql-connector-python
+```
+
+Then restart your mysql service.

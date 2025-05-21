@@ -324,7 +324,7 @@ class CabinPricing:
         JOIN Flight f ON cp.FlightID = f.FlightID
         JOIN Airport a_dep ON cp.DepartureAirportID = a_dep.AirportCode
         JOIN Airport a_arr ON cp.ArrivalAirportID = a_arr.AirportCode
-        WHERE cp.DepartureAirportID = ? AND cp.ArrivalAirportID = ?
+        WHERE cp.DepartureAirportID = %s AND cp.ArrivalAirportID = %s
         """
         params = (departure_airport_id, arrival_airport_id)
         try:

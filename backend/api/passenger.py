@@ -1,10 +1,20 @@
 from flask import Blueprint, request, jsonify
-from db.models import Passenger, CabinPricing, TicketSale
+from db.models import Passenger, CabinPricing, TicketSale, Airport
+import mysql.connector
 
 passenger_api = Blueprint('passenger_api', __name__)
 
+# ====================== 获取机场列表 ======================
+@passenger_api.route('/airports', methods=['GET'])
+def get_airports():
+    try:
+        airports = Airport.get_airports()
+        return jsonify(airports), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ====================== 查询可用产品 ======================
-@passenger_api.route('/query-products', methods=['GET'])
+@passenger_api.route('/products', methods=['GET'])
 def query_products():
     departure_airport_id = request.args.get('departureAirportID')
     arrival_airport_id = request.args.get('arrivalAirportID')
@@ -20,7 +30,7 @@ def query_products():
         return jsonify({"error": str(e)}), 500
 
 # ====================== 购买产品（创建交易） ======================
-@passenger_api.route('/make-transaction', methods=['POST'])
+@passenger_api.route('/transaction', methods=['POST'])
 def make_transaction():
     data = request.get_json()
     required_fields = ['idNumber', 'passengerName', 'cabinPricingID', 'flightDate']
@@ -45,7 +55,7 @@ def make_transaction():
         return jsonify({"error": "交易失败", "detail": str(e)}), 500
 
 # ====================== 查询乘客交易记录 ======================
-@passenger_api.route('/query-transactions', methods=['GET'])
+@passenger_api.route('/passenger-transactions', methods=['GET'])
 def query_transactions():
     id_number = request.args.get('idNumber')
     if not id_number:
