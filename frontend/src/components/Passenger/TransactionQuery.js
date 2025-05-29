@@ -9,12 +9,13 @@ const TransactionQuery = () => {
 
     useEffect(() => {
         const fetchTransactions = async () => {
+            // console.log('Current auth.idNumber:', auth.idNumber); // <--- 添加这行
             if (!auth.idNumber) {
                 console.error('未找到用户身份证号');
                 return;
             }
             try {
-                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/passenger-transactions`, {
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/passenger/passenger-transactions`, {
                     params: { idNumber: auth.idNumber }
                 });
                 setTransactions(response.data);
@@ -32,10 +33,12 @@ const TransactionQuery = () => {
                 <Table>
                     <TableHead>
                         <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
-                            <TableCell>机票 ID</TableCell>
+                            <TableCell>航班 ID</TableCell>
                             <TableCell>航班日期</TableCell>
-                            <TableCell>乘客 ID</TableCell>
-                            <TableCell>产品 ID</TableCell>
+                            <TableCell>乘客姓名</TableCell>
+                            <TableCell>出发</TableCell>
+                            <TableCell>到达</TableCell>
+                            <TableCell>票价</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -47,10 +50,12 @@ const TransactionQuery = () => {
                                     borderBottom: '1px solid #f0f0f0'
                                 }}
                             >
-                                <TableCell>{transaction.TicketSaleID}</TableCell>
+                                <TableCell>{transaction.FlightID}</TableCell>
                                 <TableCell>{new Date(transaction.FlightDate).toLocaleDateString('zh-CN')}</TableCell>
-                                <TableCell>{transaction.PassengerID}</TableCell>
-                                <TableCell>{transaction.CabinPricingID}</TableCell>
+                                <TableCell>{transaction.PassengerName}</TableCell>
+                                <TableCell>{transaction.DepartureAirportID}</TableCell>
+                                <TableCell>{transaction.ArrivalAirportID}</TableCell>
+                                <TableCell>{transaction.Price}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

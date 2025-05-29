@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
   });
 
   const login = (role, idNumber) => {
-    localStorage.setItem('auth', JSON.stringify({ isLoggedIn: true, role }));
+    localStorage.setItem('auth', JSON.stringify({ isLoggedIn: true, role, idNumber}));
     setAuth({ isLoggedIn: true, role, idNumber });
   };
 
