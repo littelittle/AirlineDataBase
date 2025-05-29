@@ -4,18 +4,22 @@ import AirportSelection from '../components/Passenger/AirportSelection';
 import ProductQuery from '../components/Passenger/ProductQuery';
 import Transaction from '../components/Passenger/Transaction';
 import TransactionQuery from '../components/Passenger/TransactionQuery';
+import { Typography, Box } from '@mui/material';
 
 const PassengerPage = () => {
   return (
-    <div>
-      <h1>乘客页面</h1>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        乘客服务平台
+      </Typography>
       <Routes>
         <Route path="/" element={<AirportSelection />} />
-        <Route path="/products" element={<ProductQuery />} />
-        <Route path="/transaction/:productId" element={<Transaction />} />
-        <Route path="/transaction-query" element={<TransactionQuery />} />
+        <Route path="search" element={<AirportSelection />} />
+        <Route path="products" element={<ProductQuery />} />
+        <Route path="transaction/:productId" element={<Transaction />} />
+        <Route path="tickets" element={<TransactionQuery />} />
       </Routes>
-    </div>
+    </Box>
   );
 };
 
