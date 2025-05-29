@@ -1,11 +1,12 @@
 import mysql.connector
 from mysql.connector import Error
+import os
 
 # 数据库配置（请替换为你的实际信息）
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'YourPassword',
+    'password': os.environ.get('DBPassword'),
     'database': 'AirlineDB',
     'charset': 'utf8mb4'
 }
