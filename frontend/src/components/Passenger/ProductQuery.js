@@ -17,6 +17,7 @@ const ProductQuery = () => {
                 const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/passenger/products`, {
                     params: { departureAirportID: departure, arrivalAirportID: arrival }
                 });
+                console.error(response.data)
                 setProducts(response.data || []);
                 setError(null);
             } catch (error) {
@@ -35,10 +36,18 @@ const ProductQuery = () => {
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>可用航班产品</Typography>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {products.length === 0 && !error ? (
-                <Typography>暂无可用产品</Typography>
+                <>
+                    <Typography variant="h5" gutterBottom>暂无可用产品</Typography>
+                    <Button
+                        variant="outlined"
+                        sx={{ mt: 2 }}
+                        onClick={() => navigate(-1)} // Navigate back one step
+                    >
+                        返回
+                    </Button>
+                </>
             ) : (
                 products.map((product) => (
                     <Card key={product.PricingID} sx={{ mb: 2 }}>

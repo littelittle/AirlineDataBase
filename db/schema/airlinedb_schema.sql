@@ -54,11 +54,21 @@ CREATE TABLE CabinPricing (
 );
 
 -- 乘客表
+-- CREATE TABLE Passenger (
+--     PassengerID INT AUTO_INCREMENT,
+--     IDNumber VARCHAR(20) NOT NULL UNIQUE,
+--     PassengerName VARCHAR(100) NOT NULL,
+--     PRIMARY KEY (PassengerID)
+-- );
+
 CREATE TABLE Passenger (
-    PassengerID INT AUTO_INCREMENT,
-    IDNumber VARCHAR(20) NOT NULL UNIQUE,
-    PassengerName VARCHAR(100) NOT NULL,
-    PRIMARY KEY (PassengerID)
+    PassengerID INT PRIMARY KEY AUTO_INCREMENT,
+    PassengerName VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    salt VARCHAR(32) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
 );
 
 -- 售票记录表
