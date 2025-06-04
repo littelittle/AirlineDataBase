@@ -1,5 +1,6 @@
 from api.admin import admin_api
 from api.passenger import passenger_api
+from api.auth import auth_api
 from flask import Flask
 from flask_cors import CORS
 
@@ -10,6 +11,7 @@ app.config['DEBUG'] = True
 # 注册 API 蓝图
 app.register_blueprint(admin_api, url_prefix='/api/admin')
 app.register_blueprint(passenger_api, url_prefix='/api/passenger')
+app.register_blueprint(auth_api, url_prefix='/api/auth')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

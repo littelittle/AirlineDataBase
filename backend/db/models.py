@@ -1,7 +1,7 @@
 import traceback
 
 from db.db_manager import execute_query, fetch_query, get_db_connection
-
+from db.utils import *
 
 # ====================== 城市 ======================
 class City:
@@ -335,6 +335,92 @@ class CabinPricing:
 
 # ====================== 乘客相关 ======================
 class Passenger:
+
+    @staticmethod
+    def create_passenger_with_password(passenger_name, password):
+        """
+        Creates a new passenger with a name and password.
+        Hashes the password before storing.
+        """
+        conn = None
+        try:
+            conn = get_db_connection()
+            # Check if passenger already exists by PassengerName
+            query_check = "SELECT PassengerID FROM Passenger WHERE PassengerName = %s"
+            existing_passenger = fetch_query(conn, query_check, (passenger_name,))
+            if existing_passenger:
+                # Optionally, you could raise an error or return a specific indicator
+                print(f"Passenger with name '{passenger_name}' already exists.")
+                return 'exists' # Or raise ValueError("Passenger name already exists")
+
+            salt = generate_salt()
+            hashed_pwd = hash_password(password, salt)
+
+            query_create = """
+                INSERT INTO Passenger (PassengerName, password_hash, salt)
+                VALUES (%s, %s, %s)
+            """
+            params = (passenger_name, hashed_pwd, salt)
+            execute_query(conn, query_create, params)
+            conn.commit() # Make sure to commit the transaction
+            return True
+        except Exception as e:
+            if conn:
+                conn.rollback() # Rollback on error
+            print(f"Error creating passenger: {e}")
+            return None # Or re-raise the exception
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_passenger_by_name(passenger_name):
+        """
+        Retrieves passenger details (including password hash and salt) by PassengerName.
+        """
+        conn = None
+        try:
+            conn = get_db_connection()
+            query = """
+                SELECT PassengerID, PassengerName, password_hash, salt, is_active
+                FROM Passenger
+                WHERE PassengerName = %s
+            """
+            params = (passenger_name,)
+            result = fetch_query(conn, query, params) # fetch_query should return a list of dicts
+            if result:
+                return result[0] # Return the first passenger found (PassengerName is UNIQUE)
+            return None
+        except Exception as e:
+            print(f"Error fetching passenger by name: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_profile(passnger_id):
+        "根据passenger id获取用户全部信息"
+        conn = None
+        try:
+            conn = get_db_connection()
+            query = """
+                SELECT PassengerName, created_at, updated_at, is_active
+                FROM Passenger
+                WHERE PassengerID = %s
+            """
+            params = (passnger_id,)
+            result = fetch_query(conn, query, params) # fetch_query should return a list of dicts
+            if result:
+                return result 
+            return None
+        except Exception as e:
+            print(f"Error fetching passenger profile by id: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
     @staticmethod
     def get_or_create_passenger(id_number, passenger_name):
         """根据身份证号获取或创建乘客"""
@@ -372,7 +458,7 @@ class TicketSale:
         """查询乘客的所有交易记录"""
         conn = get_db_connection()
         query = """
-        SELECT ts.TicketSaleID, ts.FlightDate, cp.*, f.FlightID, f.WeeklyFlightDays, p.PassengerName, p.IDNumber
+        SELECT ts.TicketSaleID, ts.FlightDate, cp.*, f.FlightID, f.WeeklyFlightDays, p.PassengerName
         FROM TicketSale ts
         JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
         JOIN Passenger p ON ts.PassengerID = p.PassengerID

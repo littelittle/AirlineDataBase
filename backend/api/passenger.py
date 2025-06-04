@@ -24,7 +24,7 @@ def query_products():
     try:
         pricings = CabinPricing.query_pricing_by_airports(departure_airport_id, arrival_airport_id)
         if not pricings:
-            return jsonify({"message": "无可用产品"}), 200
+            return jsonify(None), 200
         return jsonify(pricings), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -33,15 +33,16 @@ def query_products():
 @passenger_api.route('/transaction', methods=['POST'])
 def make_transaction():
     data = request.get_json()
-    required_fields = ['idNumber', 'passengerName', 'cabinPricingID', 'flightDate']
+    required_fields = ['idNumber', 'cabinPricingID', 'flightDate']
     if not all(field in data for field in required_fields):
         return jsonify({"error": "缺少必要字段"}), 400
 
     try:
-        passenger_id = Passenger.get_or_create_passenger(
-            data['idNumber'],
-            data['passengerName']
-        )
+        # passenger_id = Passenger.get_or_create_passenger(
+        #     data['idNumber'],
+        #     data['passengerName']
+        # )
+        passenger_id = data['idNumber']
         TicketSale.create_ticket_sale(
             passenger_id,
             data['cabinPricingID'],
@@ -54,6 +55,20 @@ def make_transaction():
             return jsonify({"error": e.msg}), 400
         return jsonify({"error": "交易失败", "detail": str(e)}), 500
 
+
+# ====================== 查询用户信息 ======================
+@passenger_api.route('/profile', methods=['GET'])
+def query_profile():
+    id_number = request.args.get('idNumber')
+    if not id_number:
+        return jsonify({"error": "请提供身份证号"}), 400
+    try:
+        profile = Passenger.get_profile(id_number)
+        return jsonify(profile), 200
+    except mysql.connector.Error as e:
+        return jsonify({"error": "查询失败", "detail": str(e)}), 500
+
+
 # ====================== 查询乘客交易记录 ======================
 @passenger_api.route('/passenger-transactions', methods=['GET'])
 def query_transactions():
@@ -62,8 +77,9 @@ def query_transactions():
         return jsonify({"error": "请提供身份证号"}), 400
 
     try:
-        passenger_id = Passenger.get_or_create_passenger(id_number, "")  # 无需姓名，仅查询
-        transactions = TicketSale.get_transactions_by_passenger(passenger_id)
+        # passenger_id = Passenger.get_or_create_passenger(id_number, "")  # 无需姓名，仅查询
+        # passenger_id = Passenger.get_passenger_by_name(id_number)
+        transactions = TicketSale.get_transactions_by_passenger(id_number)
         return jsonify(transactions), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
