@@ -445,12 +445,19 @@ class TicketSale:
     def create_ticket_sale(passenger_id, cabin_pricing_id, flight_date):
         """创建售票记录（触发超售检查触发器）"""
         conn = get_db_connection()
+        # query = """
+        # INSERT INTO TicketSale (PassengerID, CabinPricingID, FlightDate)
+        # VALUES (%s, %s, %s)
+        # """
         query = """
-        INSERT INTO TicketSale (PassengerID, CabinPricingID, FlightDate)
-        VALUES (%s, %s, %s)
+        CALL BookTicket(%s, %s, %s);
         """
         params = (passenger_id, cabin_pricing_id, flight_date)
-        execute_query(conn, query, params)
+        try:
+            execute_query(conn, query, params)
+        except Exception as e:
+            print(f'购票失败：{e}')
+            raise
         conn.close()
 
     @staticmethod

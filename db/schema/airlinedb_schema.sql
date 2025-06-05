@@ -168,4 +168,58 @@ BEGIN
     END IF;
 END //
 
-DELIMITER ;    
+
+CREATE PROCEDURE BookTicket(
+    IN p_PassengerID INT,
+    IN p_CabinPricingID INT,
+    IN p_FlightDate DATE
+)
+BEGIN
+    -- 声明变量用于检查
+    DECLARE v_FlightID CHAR(20);
+    DECLARE v_ExistingTickets INT;
+
+    -- 声明一个退出处理器，用于在发生任何SQL异常时自动回滚事务
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- 发生错误，回滚事务
+        ROLLBACK;
+        -- 将错误信息重新抛出，以便调用者可以捕获
+        RESIGNAL;
+    END;
+
+    -- 开启事务
+    START TRANSACTION;
+
+    -- 步骤 1: 根据传入的 CabinPricingID 获取航班ID (FlightID)
+    -- 这个查询本身也能验证 CabinPricingID 是否有效
+    SELECT FlightID INTO v_FlightID
+    FROM CabinPricing
+    WHERE PricingID = p_CabinPricingID;
+
+    -- 步骤 2: 检查该用户是否已购买过当天的同一航班机票 (你的新要求)
+    SELECT COUNT(*)
+    INTO v_ExistingTickets
+    FROM TicketSale ts
+    JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
+    WHERE ts.PassengerID = p_PassengerID
+      AND cp.FlightID = v_FlightID
+      AND ts.FlightDate = p_FlightDate;
+
+    -- 如果查询到记录数大于0，说明已购买，则抛出错误
+    IF v_ExistingTickets > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '该乘客已购买当天同一航班的机票，无法重复预订。';
+    END IF;
+
+    -- 步骤 3: 插入新的售票记录
+    -- 这一步会自动触发你已经创建的 `CheckOverbooking` 触发器。
+    -- 如果超售，触发器会抛出错误，上面的EXIT HANDLER会捕获到并回滚事务。
+    INSERT INTO TicketSale (PassengerID, CabinPricingID, FlightDate)
+    VALUES (p_PassengerID, p_CabinPricingID, p_FlightDate);
+
+    -- 如果以上所有步骤都成功执行，没有错误发生，则提交事务
+    COMMIT;
+
+END //
+
+DELIMITER ;
