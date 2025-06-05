@@ -178,6 +178,8 @@ BEGIN
     -- 声明变量用于检查
     DECLARE v_FlightID CHAR(20);
     DECLARE v_ExistingTickets INT;
+    DECLARE v_DepartureAirportID char(10);
+    DECLARE v_ArrivalAirportID char(10);
 
     -- 声明一个退出处理器，用于在发生任何SQL异常时自动回滚事务
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -193,7 +195,7 @@ BEGIN
 
     -- 步骤 1: 根据传入的 CabinPricingID 获取航班ID (FlightID)
     -- 这个查询本身也能验证 CabinPricingID 是否有效
-    SELECT FlightID INTO v_FlightID
+    SELECT FlightID, DepartureAirportID, ArrivalAirportID INTO v_FlightID, v_DepartureAirportID, v_ArrivalAirportID
     FROM CabinPricing
     WHERE PricingID = p_CabinPricingID;
 
@@ -204,7 +206,8 @@ BEGIN
     JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
     WHERE ts.PassengerID = p_PassengerID
       AND cp.FlightID = v_FlightID
-      AND ts.FlightDate = p_FlightDate;
+      AND ts.FlightDate = p_FlightDate
+      AND ((cp.DepartureAirportID = v_DepartureAirportID) OR (cp.ArrivalAirportID = v_ArrivalAirportID));
 
     -- 如果查询到记录数大于0，说明已购买，则抛出错误
     IF v_ExistingTickets > 0 THEN
