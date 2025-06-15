@@ -20,7 +20,7 @@ const PassengerPage = () => {
         <Route path="/" element={<AirportSelection />} />
         <Route path="search" element={<AirportSelection />} />
         <Route path="products" element={<ProductQuery />} />
-        <Route path="transaction/:productId" element={<Transaction />} />
+        <Route path="transaction/:productId/:weeklyFlightDays" element={<Transaction />} />
         <Route path="tickets" element={<TransactionQuery />} />
         <Route path="profile" element={<ProfilePage />} />
       </Routes>

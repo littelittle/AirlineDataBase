@@ -30,8 +30,8 @@ const ProductQuery = () => {
         }
     }, [departure, arrival]);
 
-    const handleSelectProduct = (productId) => {
-        navigate(`/passenger/transaction/${productId}`);
+    const handleSelectProduct = (productId, WeeklyFlightDays) => {
+        navigate(`/passenger/transaction/${productId}/${WeeklyFlightDays}`,);
     };
 
     return (
@@ -61,12 +61,15 @@ const ProductQuery = () => {
                             <Typography color="text.secondary">
                                 价格: ¥{product.Price} ({product.DiscountRate}% 折扣)
                             </Typography>
+                            <Typography color="text.secondary">
+                                飞行日: {product.WeeklyFlightDays}
+                            </Typography>
                         </CardContent>
                         <CardActions>
                             <Button
                                 variant="contained"
                                 color="primary"
-                                onClick={() => handleSelectProduct(product.PricingID)}
+                                onClick={() => handleSelectProduct(product.PricingID, product.WeeklyFlightDays)}
                             >
                                 选择
                             </Button>

@@ -145,6 +145,9 @@ class Flight:
             print("航班创建成功")
         except Exception as e:
             print(f"创建航班时出错: {e}")
+            traceback.print_exc()
+            # 可以选择抛出异常或返回特定值
+            raise
         finally:
             conn.close()
     @staticmethod
@@ -228,10 +231,11 @@ class FlightAirport:
         conn = get_db_connection()
         query = """
         UPDATE Flight_Airport
-        SET AirportCode = %s, StopOrder = %s
-        WHERE FlightID = %s
+        SET AirportCode = %s
+        WHERE FlightID = %s AND StopOrder = %s
         """
-        params = (airport_code, stop_order, flight_id)
+        print(airport_code, flight_id, stop_order)
+        params = (airport_code, flight_id, stop_order)
         execute_query(conn, query, params)
         conn.close()
 
@@ -389,6 +393,13 @@ class Passenger:
             params = (passenger_name,)
             result = fetch_query(conn, query, params) # fetch_query should return a list of dicts
             if result:
+                update_query = """
+                    UPDATE Passenger
+                    SET updated_at = NOW()
+                    WHERE PassengerID = %s
+                """
+                update_params = (result[0]['PassengerID'],)
+                execute_query(conn, update_query, update_params)
                 return result[0] # Return the first passenger found (PassengerName is UNIQUE)
             return None
         except Exception as e:

@@ -128,15 +128,20 @@ def update_airport(AirportCode):
 @admin_api.route('/flights', methods=['POST'])
 def create_flight_api():
     data = request.get_json()
-    flight_id = data.get('FlightID')
-    aircraft_type = data.get('AircraftType')
+    flight_id = data.get('flightID')
+    aircraft_type = data.get('aircraftType')
     first_class_seats = data.get('FirstClassSeats')
-    economy_seats = data.get('EconomySeats')
+    economy_seats = data.get('EconomyClassSeats')
     weekly_flight_days = data.get('WeeklyFlightDays')
+
+    print(f"Received data for flight creation: {data}")
+    print(flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days)
     if not all([flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days]):
         return jsonify({"error": "缺少必要参数"}), 400
     try:
         Flight.create_flight(flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days)
+        for airport_stop_dict in data.get('stops'):
+            FlightAirport.add_flight_airport(flight_id, airport_stop_dict['airportCode'], airport_stop_dict['stopOrder'])
         return jsonify({"message": "航班创建成功"}), 201
     except Exception as e:
         return jsonify({"error": f"更新航班信息时出错: {str(e)}"}), 500
@@ -177,19 +182,49 @@ def delete_flight_api(flight_id):
     except Exception as e:
         return jsonify({"error": "航班删除失败"}), 500
 
+def is_ordered_subsequence(old_list, new_list):
+    if not old_list:  # 空的 old_list 总是任何列表的有序子序列
+        return True
+
+    old_idx = 0
+    for item in new_list:
+        if old_idx < len(old_list) and item == old_list[old_idx]:
+            old_idx += 1
+    return old_idx == len(old_list)
+
 # 航班与机场关联接口
 @admin_api.route('/flights/<flight_id>/airports', methods=['POST'])
 def add_flight_airport_api(flight_id):
     data = request.get_json()
-    airport_code = data.get('AirportCode')
-    stop_order = data.get('StopOrder')
-    if not all([airport_code, stop_order]):
+    # airport_code = data.get('AirportCode')
+    # stop_order = data.get('StopOrder')
+    old_airports = data.get('OriginalStops')
+    new_airports = data.get('ModifiedStops')
+    print(f"Received data for flight airport creation: {old_airports}, {new_airports}")
+    if not all([old_airports, new_airports]):
         return jsonify({"error": "缺少必要参数"}), 400
     try:
-        FlightAirport.add_flight_airport(flight_id, airport_code, stop_order)
+        # 检查新机场列表是否是旧机场列表的有序子序列
+        if not is_ordered_subsequence(old_airports, new_airports):
+            print("新机场列表不是旧机场列表的有序子序列")
+            return jsonify({"error": "权限不够！需为顺序子序列！不可删除已有机场"}), 400
+        
+        for i, airport_code in enumerate(new_airports[:len(old_airports)]):
+            FlightAirport.update_flight_airport(flight_id, airport_code, i + 1)
+        for i in range(len(old_airports), len(new_airports)):
+            FlightAirport.add_flight_airport(flight_id, new_airports[i], i + 1)
+
         return jsonify({"message": "航班经停机场添加成功"}), 201
+    
     except Exception as e:
-        return jsonify({"error": "航班经停机场添加失败"}), 500
+        return jsonify({"error": f"航班经停机场添加失败: {str(e)}"}), 500
+    # if not all([airport_code, stop_order]):
+    #     return jsonify({"error": "缺少必要参数"}), 400
+    # try:
+    #     FlightAirport.add_flight_airport(flight_id, airport_code, stop_order)
+    #     return jsonify({"message": "航班经停机场添加成功"}), 201
+    # except Exception as e:
+    #     return jsonify({"error": "航班经停机场添加失败"}), 500
 
 @admin_api.route('/flights/<flight_id>/airports', methods=['GET'])
 def get_flight_airports_api(flight_id):

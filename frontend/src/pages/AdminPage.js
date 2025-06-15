@@ -4,6 +4,7 @@ import CityManaging from '../components/Admin/CityManaging';
 import AirportManaging from '../components/Admin/AirportManaging';
 import FlightScheduling from '../components/Admin/FlightScheduling';
 import TransactionRecord from '../components/Admin/TransactionRecord';
+import AddFlight from '../components/Admin/AddFlight';
 import { Typography, Box } from '@mui/material';
 
 const AdminPage = () => {
@@ -18,6 +19,7 @@ const AdminPage = () => {
         <Route path="airports" element={<AirportManaging />} />
         <Route path="flights" element={<FlightScheduling />} />
         <Route path="transactions" element={<TransactionRecord />} />
+        <Route path="flights/new" element={<AddFlight />} />
       </Routes>
     </Box>
   );

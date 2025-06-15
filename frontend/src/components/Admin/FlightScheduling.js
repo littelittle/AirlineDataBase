@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Autocomplete, TextField } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, Autocomplete, TextField, Chip } from '@mui/material';
 
 const FlightScheduling = () => {
     const [flights, setFlights] = useState([]);
@@ -18,6 +19,7 @@ const FlightScheduling = () => {
     const [price, setPrice] = useState('');
     const [discount, setDiscount] = useState('');
     const [adjacentAirports, setAdjacentAirports] = useState([]);
+    const navigate = useNavigate();
 
     const fetchFlights = async () => {
         try {
@@ -33,7 +35,8 @@ const FlightScheduling = () => {
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights/${flightId}/airports`);
             const sorted = response.data.sort((a, b) => a.StopOrder - b.StopOrder);
             setStops(sorted);
-            setSortedStops(sorted);
+            setSortedStops(sorted.map(item => item.AirportCode));
+            console.log('Sorted Stops:', sortedStops);
             generateAdjacentRoutes(sorted);
         } catch (error) {
             console.error('获取经停机场数据失败:', error);
@@ -107,14 +110,17 @@ const FlightScheduling = () => {
         try {
             await axios.post(`${process.env.REACT_APP_API_URL}/api/admin/flights/${selectedFlight.FlightID}/airports`, {
                 // FlightID: selectedFlight.FlightID,
-                AirportCode: newAirport,
-                StopOrder: newStopId
+                // AirportCode: newAirport,
+                // StopOrder: newStopId
+                OriginalStops: stops.map(stop => stop.AirportCode),
+                ModifiedStops: sortedStops
             });
-            alert('经停机场添加成功！'); 
+            alert('经停机场修改成功！'); 
             fetchStops(selectedFlight.FlightID);
             resetFlightRouteForm();
         } catch (error){
-            alert('添加经停机场失败！');
+            alert(`添加经停机场失败！${error.response?.data?.error || error.message}`);
+            setSortedStops(stops.map(stop => stop.AirportCode)); // Reset to original stops
         }
     }
 
@@ -180,12 +186,8 @@ const FlightScheduling = () => {
     };
 
     const validateFlightRoute = () => {
-        if (!newAirport){
-            alert('请选择新添加的机场');
-            return false;
-        }
-        if (!newStopId){
-            alert('停靠顺序未知！');
+        if (!selectedFlight) {
+            alert('请先选择航班');
             return false;
         }
         return true;
@@ -239,34 +241,51 @@ const FlightScheduling = () => {
                 </TableContainer>
             </Box>
 
+            <Box sx={{ mt: 2 }}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => navigate('/admin/flights/new',)}
+                    sx={{ mb: 2 }}
+                >
+                    新增航班
+                </Button>
+            </Box>
+
             {/* 选中航班的航线管理模块*/}
             {selectedFlight && (
                 <Box>
                     <Typography variant="h6" gutterBottom>航班：{selectedFlight.FlightID}</Typography>
-                    {/* 添加经停机场 */}
+                    {/* 插入经停机场 */}
                     <Box sx={{ mb: 3 }}>
                         <Box>
-                        <Typography variant="subtitle1">添加经停机场 (已有{sortedStops.length} 个)</Typography>
-                        <Typography>当前顺序：{sortedStops.map(stop => stop.AirportCode).join(' → ')}</Typography>
+                        <Typography variant="subtitle1">插入经停机场</Typography>
+                        <Typography>当前顺序：{sortedStops.join(' → ')}</Typography>
                         </Box>
                         <Box component="form" onSubmit={handleAddAirport} sx={{ mb: 3 }}>
                            <Autocomplete
-                                options={airports}
-                                getOptionLabel={(option) => `${option.AirportCode}(${option.Name})`}
-                                // value={newAirport ? {AirportCode:newAirport} : null}
-                                onChange={(e, value) => {
-                                    if (value) {
-                                        setNewAirport(value.AirportCode);
-                                        setNewStopId(sortedStops.length+1);
-                                    } else {
-                                        setNewAirport(null);
-                                        setNewStopId(null);
-                                    }
+                                multiple
+                                options={airports.map(airport => airport.AirportCode)}
+                                getOptionLabel={(option) => `${option}(${airports.find(airport => airport.AirportCode === option).Name})`}
+                                value={sortedStops}
+                                onChange={(e, newValue) => {
+                                    // setNewAirport(value.AirportCode);
+                                    // setNewStopId(sortedStops.length+1);
+                                    console.log('Selected airport:', newValue);
+                                    setSortedStops(newValue);
                                 }}
+                                renderTags={(tagValue, getTagProps) =>
+                                    tagValue.map((option, index) => (
+                                        <Chip
+                                            label={option} // Display only AirportCode here
+                                            {...getTagProps({ index })}
+                                        />
+                                    ))
+                                }
                                 renderInput={(params) => <TextField {...params} label="选择机场" margin="normal" fullWidth />}
                             /> 
                             <Button type="submit" variant="contained" color="primary">
-                                    {'添加经停机场'}
+                                    {'插入经停机场'}
                             </Button>
                         </Box>
                     </Box>
@@ -303,12 +322,20 @@ const FlightScheduling = () => {
                                 }}
                                 renderInput={(params) => <TextField {...params} label="选择航线" margin="normal" fullWidth />}
                             />
-                            <TextField
-                                label="舱位"
+                            <Autocomplete
+                                options={['Economy', 'Firstclass']}
                                 value={cabinClass}
-                                onChange={(e) => setCabinClass(e.target.value)}
-                                margin="normal"
-                                fullWidth
+                                onChange={(event, newValue) => {
+                                    setCabinClass(newValue);
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                    {...params}
+                                    label="舱位"
+                                    margin="normal"
+                                    fullWidth
+                                    />
+                                )}
                             />
                             <TextField
                                 label="价格（元）"
