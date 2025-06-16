@@ -8,7 +8,16 @@ const AirportSelection = () => {
     const [arrivalAirport, setArrivalAirport] = useState(null);
     const [airports, setAirports] = useState([]);
     const [error, setError] = useState(null);
+    const [flightDate, setFlightDate] = useState('');
     const navigate = useNavigate();
+
+    const getMinDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
     useEffect(() => {
         axios.get(`${process.env.REACT_APP_API_URL}/api/passenger/airports`)
@@ -28,15 +37,31 @@ const AirportSelection = () => {
             setError('请选择出发和到达机场');
             return;
         }
+        if (!flightDate) {
+            setError('请选择航班日期'); 
+            return;
+        }
         if (departureAirport.AirportCode === arrivalAirport.AirportCode) {
             setError('出发和到达机场不能相同');
             return;
         }
-        navigate(`/passenger/products?departure=${departureAirport.AirportCode}&arrival=${arrivalAirport.AirportCode}`);
+        navigate(`/passenger/products?departure=${departureAirport.AirportCode}&arrival=${arrivalAirport.AirportCode}&flightDate=${flightDate}`);
     };
 
     return (
         <Box sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>出发日期</Typography>
+            <TextField
+                    label="航班日期"
+                    type="date"
+                    value={flightDate}
+                    onChange={(e) => setFlightDate(e.target.value)}
+                    margin="normal"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    // error={!!error && !flightDate}
+                    inputProps={{min:getMinDate(),}}
+            />
             <Typography variant="h5" gutterBottom>选择出发和到达机场</Typography>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {airports.length === 0 && !error && (

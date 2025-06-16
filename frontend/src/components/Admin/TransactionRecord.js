@@ -28,6 +28,7 @@ const TransactionRecord = () => {
                             <TableCell>航班日期</TableCell>
                             <TableCell>乘客 ID</TableCell>
                             <TableCell>产品 ID</TableCell>
+                            <TableCell>实付金额</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -43,6 +44,7 @@ const TransactionRecord = () => {
                                 <TableCell>{new Date(transaction.FlightDate).toLocaleDateString('zh-CN')}</TableCell>
                                 <TableCell>{transaction.PassengerID}</TableCell>
                                 <TableCell>{transaction.CabinPricingID}</TableCell>
+                                <TableCell>{transaction.Price}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

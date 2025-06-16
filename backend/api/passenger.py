@@ -18,13 +18,20 @@ def get_airports():
 def query_products():
     departure_airport_id = request.args.get('departureAirportID')
     arrival_airport_id = request.args.get('arrivalAirportID')
+    weekday = request.args.get('weekday')
+    if not weekday:
+        return jsonify({"error": "请提供查询的日期"}), 400
     if not departure_airport_id or not arrival_airport_id:
         return jsonify({"error": "请提供出发和到达机场代码"}), 400
 
     try:
-        pricings = CabinPricing.query_pricing_by_airports(departure_airport_id, arrival_airport_id)
+        pricings = CabinPricing.query_pricing_by_airports_week(departure_airport_id, arrival_airport_id, weekday)
         if not pricings:
-            return jsonify(None), 200
+            pricings = CabinPricing.query_pricing_by_airports(departure_airport_id, arrival_airport_id)
+            if not pricings:
+                return jsonify(None), 200
+            else: 
+                return jsonify(pricings), 201
         return jsonify(pricings), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -33,8 +40,9 @@ def query_products():
 @passenger_api.route('/transaction', methods=['POST'])
 def make_transaction():
     data = request.get_json()
-    required_fields = ['idNumber', 'cabinPricingID', 'flightDate']
+    required_fields = ['idNumber', 'cabinPricingID', 'flightDate', 'price']
     if not all(field in data for field in required_fields):
+        print("缺少必要字段:", data)
         return jsonify({"error": "缺少必要字段"}), 400
 
     try:
@@ -46,7 +54,8 @@ def make_transaction():
         TicketSale.create_ticket_sale(
             passenger_id,
             data['cabinPricingID'],
-            data['flightDate']
+            data['flightDate'],
+            data['price']
         )
         return jsonify({"message": "交易成功"}), 200
     except mysql.connector.Error as e:
@@ -80,6 +89,7 @@ def query_transactions():
         # passenger_id = Passenger.get_or_create_passenger(id_number, "")  # 无需姓名，仅查询
         # passenger_id = Passenger.get_passenger_by_name(id_number)
         transactions = TicketSale.get_transactions_by_passenger(id_number)
+        # print(f'查询到的交易记录: {transactions}')
         return jsonify(transactions), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

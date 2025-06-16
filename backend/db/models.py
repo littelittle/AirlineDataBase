@@ -337,6 +337,25 @@ class CabinPricing:
             print(f"按机场查询定价失败: {e}")
             raise
 
+    @staticmethod
+    def query_pricing_by_airports_week(departure_airport_id, arrival_airport_id, weekday):
+        """按起降机场查询定价（带异常处理）"""
+        conn = get_db_connection()
+        query = """
+        SELECT cp.*, f.FlightID, f.WeeklyFlightDays, a_dep.Name AS DepartureAirportName, a_arr.Name AS ArrivalAirportName
+        FROM CabinPricing cp
+        JOIN Flight f ON cp.FlightID = f.FlightID
+        JOIN Airport a_dep ON cp.DepartureAirportID = a_dep.AirportCode
+        JOIN Airport a_arr ON cp.ArrivalAirportID = a_arr.AirportCode
+        WHERE cp.DepartureAirportID = %s AND cp.ArrivalAirportID = %s AND f.WeeklyFlightDays LIKE %s
+        """
+        params = (departure_airport_id, arrival_airport_id, f"%{weekday}%")
+        try:
+            return fetch_query(conn, query, params)
+        except Exception as e:
+            print(f"按机场查询定价失败: {e}")
+            raise
+
 # ====================== 乘客相关 ======================
 class Passenger:
 
@@ -453,7 +472,7 @@ class Passenger:
 # ====================== 售票记录 ======================
 class TicketSale:
     @staticmethod
-    def create_ticket_sale(passenger_id, cabin_pricing_id, flight_date):
+    def create_ticket_sale(passenger_id, cabin_pricing_id, flight_date, price):
         """创建售票记录（触发超售检查触发器）"""
         conn = get_db_connection()
         # query = """
@@ -461,9 +480,9 @@ class TicketSale:
         # VALUES (%s, %s, %s)
         # """
         query = """
-        CALL BookTicket(%s, %s, %s);
+        CALL BookTicket(%s, %s, %s, %s);
         """
-        params = (passenger_id, cabin_pricing_id, flight_date)
+        params = (passenger_id, cabin_pricing_id, flight_date, price)
         try:
             execute_query(conn, query, params)
         except Exception as e:
@@ -476,7 +495,7 @@ class TicketSale:
         """查询乘客的所有交易记录"""
         conn = get_db_connection()
         query = """
-        SELECT ts.TicketSaleID, ts.FlightDate, cp.*, f.FlightID, f.WeeklyFlightDays, p.PassengerName
+        SELECT ts.TicketSaleID, ts.FlightDate, ts.price, cp.*, f.FlightID, f.WeeklyFlightDays, f.AircraftType, p.PassengerName
         FROM TicketSale ts
         JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
         JOIN Passenger p ON ts.PassengerID = p.PassengerID

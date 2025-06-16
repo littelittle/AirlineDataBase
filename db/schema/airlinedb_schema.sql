@@ -77,6 +77,7 @@ CREATE TABLE TicketSale (
     PassengerID INT NOT NULL,
     CabinPricingID INT NOT NULL,
     FlightDate DATE NOT NULL,
+    Price DECIMAL(10, 2) NOT NULL CHECK (Price >= 0),
     PRIMARY KEY (TicketSaleID),
     FOREIGN KEY (PassengerID) REFERENCES Passenger(PassengerID),
     FOREIGN KEY (CabinPricingID) REFERENCES CabinPricing(PricingID)
@@ -172,7 +173,8 @@ END //
 CREATE PROCEDURE BookTicket(
     IN p_PassengerID INT,
     IN p_CabinPricingID INT,
-    IN p_FlightDate DATE
+    IN p_FlightDate DATE,
+    IN p_Price DECIMAL(10, 2)
 )
 BEGIN
     -- 声明变量用于检查
@@ -217,8 +219,8 @@ BEGIN
     -- 步骤 3: 插入新的售票记录
     -- 这一步会自动触发你已经创建的 `CheckOverbooking` 触发器。
     -- 如果超售，触发器会抛出错误，上面的EXIT HANDLER会捕获到并回滚事务。
-    INSERT INTO TicketSale (PassengerID, CabinPricingID, FlightDate)
-    VALUES (p_PassengerID, p_CabinPricingID, p_FlightDate);
+    INSERT INTO TicketSale (PassengerID, CabinPricingID, FlightDate, Price)
+    VALUES (p_PassengerID, p_CabinPricingID, p_FlightDate, p_Price);
 
     -- 如果以上所有步骤都成功执行，没有错误发生，则提交事务
     COMMIT;

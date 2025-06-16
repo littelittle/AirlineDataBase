@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Box, Typography, TextField, Button, Alert } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,9 @@ const Transaction = () => {
     const { productId, weeklyFlightDays: encodedWeeklyFlightDays } = useParams();
     // const [idNumber, setIdNumber] = useState('');
     // const [passengerName, setPassengerName] = useState('');
-    const [flightDate, setFlightDate] = useState('');
+    const {state}  = useLocation();
+    const [flightDate, setFlightDate] = useState(state?.flightDate || '');
+    const price = state?.price || 0;
     const [error, setError] = useState(null);
     const { auth } = useAuth();
     const navigate = useNavigate();
@@ -25,12 +27,16 @@ const Transaction = () => {
             setError('所选日期不在航班运行日内！');
             return;
         }
+        if (!price || price <= 0) {
+            setError('价格无效，请检查产品信息！');
+            return;
+        }
         try {
             await axios.post(`${process.env.REACT_APP_API_URL}/api/passenger/transaction`, {
-                // idNumber,
                 idNumber:auth.idNumber,
                 cabinPricingID: productId,
-                flightDate
+                flightDate,
+                price,
             });
             alert('交易成功');
             navigate('/passenger/tickets');
@@ -56,8 +62,8 @@ const Transaction = () => {
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>预订航班 (产品 ID: {productId})</Typography>
-            <Typography variant="h5" gutterBottom>飞行日: | {weeklyFlightDays.join(' | ')} |</Typography>
+            <Typography variant="h6" gutterBottom>预订航班 (产品 ID: {productId})</Typography>
+            <Typography variant="h6" gutterBottom>航班飞行日: | {weeklyFlightDays.join(' | ')} |</Typography>
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <Box component="form" onSubmit={handleSubmit}>
                 <TextField
@@ -71,6 +77,9 @@ const Transaction = () => {
                     error={!!error && !flightDate}
                     inputProps={{min:getMinDate(),}}
                 />
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                    总金额: ¥{price.toFixed(2)}
+                </Typography>
                 <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
                     确认购买
                 </Button>

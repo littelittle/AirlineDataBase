@@ -16,10 +16,12 @@ export function AuthProvider({ children }) {
   // LOGIN Function (updated to store username)
   const login = async (username, password) => {
     try {
+      console.log("Attempting to log in with username:", username);
+      console.log("API URL:", process.env.REACT_APP_API_URL)
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/login`, { 
         params: { username, password } 
       });
-
+      console.log("Login response:", response);
       const userData = await response.data; // Expect { role, idNumber, token, username } NOTE: response.data not repsonse 
       console.log("登录成功，用户数据:", userData);
       const authData = {

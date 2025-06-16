@@ -333,6 +333,7 @@ def get_products(FlightID):
 def get_transactions():
     try:
         transactions = TicketSale.get_all_transactions()
+        # print(f'查询到的交易记录: {transactions}')
         return jsonify(transactions), 200
     except Exception as e:
         return jsonify({"error": "查询产品时出现数据库异常", "detail": str(e)}), 500

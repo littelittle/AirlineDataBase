@@ -35,10 +35,11 @@ const TransactionQuery = () => {
                         <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
                             <TableCell>航班 ID</TableCell>
                             <TableCell>航班日期</TableCell>
-                            <TableCell>乘客姓名</TableCell>
+                            <TableCell>机型</TableCell>
+                            <TableCell>舱型</TableCell>
                             <TableCell>出发</TableCell>
                             <TableCell>到达</TableCell>
-                            <TableCell>票价</TableCell>
+                            <TableCell>实付</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -52,10 +53,11 @@ const TransactionQuery = () => {
                             >
                                 <TableCell>{transaction.FlightID}</TableCell>
                                 <TableCell>{new Date(transaction.FlightDate).toLocaleDateString('zh-CN')}</TableCell>
-                                <TableCell>{transaction.PassengerName}</TableCell>
+                                <TableCell>{transaction.AircraftType}</TableCell>
+                                <TableCell>{transaction.CabinLevel}</TableCell>
                                 <TableCell>{transaction.DepartureAirportID}</TableCell>
                                 <TableCell>{transaction.ArrivalAirportID}</TableCell>
-                                <TableCell>{transaction.Price}</TableCell>
+                                <TableCell>{transaction.price}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
