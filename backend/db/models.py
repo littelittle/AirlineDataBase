@@ -85,6 +85,18 @@ class City:
         finally:
             conn.close()
 
+    @staticmethod
+    def get_city_id_by_name(city_name):
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            query = "SELECT CityID FROM City WHERE CityName = %s"
+            cursor.execute(query, (city_name,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+        finally:
+            conn.close()
+
 # ====================== 机场管理 ======================
 class Airport:
     @staticmethod
@@ -206,14 +218,21 @@ class Flight:
 
     @staticmethod
     def delete_flight(flight_id):
-        """删除航班信息"""
+        """删除航班信息，若存在产品则禁止删除"""
         conn = get_db_connection()
-        # 先删除关联表中的数据
-        FlightAirport.delete_flight_airports(flight_id)
-        query = "DELETE FROM Flight WHERE FlightID = %s"
-        params = (flight_id,)
-        execute_query(conn, query, params)
-        conn.close()
+        try:
+            # 检查是否有 CabinPricing 关联该航班
+            query_check = "SELECT COUNT(*) as cnt FROM CabinPricing WHERE FlightID = %s"
+            params = (flight_id,)
+            result = fetch_query(conn, query_check, params)
+            if result and result[0]['cnt'] > 0:
+                raise Exception("该航班仍存在产品（舱位定价），请先删除所有产品后再删除航班！")
+            # 先删除关联表中的数据
+            FlightAirport.delete_flight_airports(flight_id)
+            query = "DELETE FROM Flight WHERE FlightID = %s"
+            execute_query(conn, query, params)
+        finally:
+            conn.close()
 
 # ====================== 航班与机场关联 ======================
 class FlightAirport:
@@ -226,6 +245,7 @@ class FlightAirport:
         VALUES (%s,%s,%s)
         """
         params = (flight_id, airport_code, stop_order)
+        print(f"添加航班经停机场: {flight_id}, {airport_code}, {stop_order}")
         execute_query(conn, query, params)
         conn.close()
 

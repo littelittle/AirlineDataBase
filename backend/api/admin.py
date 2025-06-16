@@ -1,5 +1,4 @@
 import pyrootutils
-
 root = pyrootutils.setup_root(
     search_from=__file__,
     indicator=["pyproject.toml"],
@@ -120,16 +119,32 @@ def update_city(city_id):
 # 添加机场信息
 @admin_api.route('/manage-airport', methods=['POST'])
 @admin_required
-def add_airport():
+def add_airport(): 
+    """
+    添加机场信息
+    接收 JSON 数据，包含 AirportCode, CityID 或 Cityname, Name
+    如果 CityID 不存在，则尝试通过 Cityname 查找 CityID
+    """
     data = request.get_json()
-    required_fields = ['AirportCode', 'CityID', 'Name']
-    if not all(field in data for field in required_fields):
-        return jsonify({"error": "缺少必要字段"}), 400
+    # Accept either CityID or Cityname
+    if 'AirportCode' not in data or 'Name' not in data:
+        return jsonify({"error": "缺少必要字段 (AirportCode, Name)"}), 400
+
+    city_id = data.get('CityID')
+    city_name = data.get('Cityname')
+    if not city_id:
+        if not city_name:
+            return jsonify({"error": "缺少必要字段 (CityID 或 Cityname)"}), 400
+        # Try to find CityID by Cityname
+        found_city_id = City.get_city_id_by_name(city_name)
+        if not found_city_id:
+            return jsonify({"error": f"未找到城市: {city_name}"}), 400
+        city_id = found_city_id
 
     try:
         Airport.add_airport(
             data['AirportCode'],
-            data['CityID'],
+            city_id,
             data['Name']
         )
         return jsonify({"message": "机场创建成功"}), 200
@@ -190,15 +205,22 @@ def create_flight_api():
     first_class_seats = data.get('FirstClassSeats')
     economy_seats = data.get('EconomyClassSeats')
     weekly_flight_days = data.get('WeeklyFlightDays')
+    stops = data.get('stops')
 
     print(f"Received data for flight creation: {data}")
-    print(flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days)
-    if not all([flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days]):
+    print(f"{flight_id}, {aircraft_type}, {first_class_seats}, {economy_seats}, {weekly_flight_days}")
+    if not all([flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days, stops]):
         return jsonify({"error": "缺少必要参数"}), 400
     try:
         Flight.create_flight(flight_id, aircraft_type, first_class_seats, economy_seats, weekly_flight_days)
-        for airport_stop_dict in data.get('stops'):
-            FlightAirport.add_flight_airport(flight_id, airport_stop_dict['airportCode'], airport_stop_dict['stopOrder'])
+        if len(stops) < 2: 
+            # 如果没有至少两个经停机场, 同样返回缺少参数
+            return jsonify({"error": "至少需要两个经停机场"}), 400
+
+        for airport_stop_dict in stops:
+            print(f"Inserting stop: {airport_stop_dict}")
+            # breakpoint()
+            FlightAirport.add_flight_airport(flight_id, airport_stop_dict['AirportCode'], airport_stop_dict['stopOrder'])
         return jsonify({"message": "航班创建成功"}), 201
     except Exception as e:
         return jsonify({"error": f"更新航班信息时出错: {str(e)}"}), 500
@@ -243,7 +265,8 @@ def delete_flight_api(flight_id):
         Flight.delete_flight(flight_id)
         return jsonify({"message": "航班删除成功"}), 200
     except Exception as e:
-        return jsonify({"error": "航班删除失败"}), 500
+        # Return the actual error message to the frontend
+        return jsonify({"error": str(e)}), 400
 
 def is_ordered_subsequence(old_list, new_list):
     if not old_list:  # 空的 old_list 总是任何列表的有序子序列
@@ -295,6 +318,9 @@ def add_flight_airport_api(flight_id):
 @admin_required
 def get_flight_airports_api(flight_id):
     airports = FlightAirport.get_flight_airports(flight_id)
+    print(f"[DEBUG] get_flight_airports_api({flight_id}) result: {airports}")
+    if not airports:
+        print(f"[WARNING] No stops found for flight {flight_id}")
     return jsonify(airports), 200
 
 
@@ -412,3 +438,37 @@ def get_transactions():
         return jsonify(transactions), 200
     except Exception as e:
         return jsonify({"error": "查询产品时出现数据库异常", "detail": str(e)}), 500
+
+# 清空所有数据接口（仅限测试/开发使用）
+from db.models import Passenger
+@admin_api.route('/clear-all', methods=['POST'])
+@admin_required
+def clear_all():
+    """
+    Danger: Clear all data from all tables in the database.
+    This should only be used for testing/dev purposes!
+    """
+    try:
+        from db.db_manager import get_db_connection, execute_query
+        conn = get_db_connection()
+        # Disable foreign key checks
+        execute_query(conn, "SET FOREIGN_KEY_CHECKS = 0;")
+        # Truncate all tables in the correct order
+        tables = [
+            'TicketSale',
+            'CabinPricing',
+            'Flight_Airport',
+            'Flight',
+            'Airport',
+            'City',
+            'Passenger'
+        ]
+        for table in tables:
+            execute_query(conn, f"TRUNCATE TABLE {table};")
+        # Re-enable foreign key checks
+        execute_query(conn, "SET FOREIGN_KEY_CHECKS = 1;")
+        conn.close()
+        Passenger.ensure_admin_exists()
+        return jsonify({"message": "All data cleared."}), 200
+    except Exception as e:
+        return jsonify({"error": f"清空数据库失败: {str(e)}"}), 500

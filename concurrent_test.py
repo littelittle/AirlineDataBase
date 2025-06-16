@@ -1,7 +1,11 @@
+# This script tests the concurrent API requests to a Flask backend. 
+# TODO 选购部分无法正常运行
 import concurrent.futures
 import requests
 import json
 import time
+
+
 
 # Configuration
 BASE_URL = "http://127.0.0.1:5000/api"  # Adjust if your backend runs on a different port
@@ -9,29 +13,96 @@ NUM_THREADS = 2
 NUM_REQUESTS_PER_THREAD = 2
 
 # Sample data (adjust as needed)
-SAMPLE_CITY_DATA = {"Cityname": ["TestCity1", "TestCity2", "TestCity3"]}
-SAMPLE_AIRPORT_DATA = {"AirportCode": "TST", "CityID": 1, "Name": "Test Airport"}
-SAMPLE_FLIGHT_DATA = {
-    "flightID": "TEST001",
-    "aircraftType": "Boeing 737",
-    "FirstClassSeats": 10,
-    "EconomyClassSeats": 100,
-    "WeeklyFlightDays": "1234567",
-    "stops": []
-}
-SAMPLE_CABIN_PRICING_DATA = {
-    "flightID": "TEST001",
-    "departureAirport": "TST",
-    "arrivalAirport": "TST",
-    "cabinClass": "economy",
-    "price": 100,
-    "discount": 0
-}
-SAMPLE_TRANSACTION_DATA = {
-    "idNumber": "1234567890",
-    "cabinPricingID": 1,
-    "flightDate": "2025-07-01"
-}
+SAMPLE_CITY_DATA = {"Cityname": ["Beijing", "Shanghai", "Guangzhou", "Shenzhen", "Chengdu"]}
+SAMPLE_AIRPORT_DATA = [
+    {"AirportCode": "PEK", "Cityname": 'Beijing', "Name": "北京首都国际机场"},
+    {"AirportCode": "SHA", "Cityname": 'Shanghai', "Name": "上海虹桥国际机场"},
+    {"AirportCode": "PVG", "Cityname": 'Shanghai', "Name": "上海浦东国际机场"},
+    {"AirportCode": "CAN", "Cityname": 'Guangzhou', "Name": "广州白云国际机场"},
+    {"AirportCode": "SZX", "Cityname": 'Shenzhen', "Name": "深圳宝安国际机场"},
+    {"AirportCode": "CTU", "Cityname": 'Chengdu', "Name": "成都双流国际机场"}
+]
+
+SAMPLE_FLIGHT_DATA = [
+    {
+        "flightID": "MU5106",
+        "aircraftType": "Airbus A330",
+        "FirstClassSeats": 10,
+        "EconomyClassSeats": 100,
+        "WeeklyFlightDays": "1234567",
+        "stops": [
+            {"AirportCode": "PEK", "stopOrder": 1},
+            {"AirportCode": "SHA", "stopOrder": 2}
+        ],
+    },
+    {
+        "flightID": "CZ3456",
+        "aircraftType": "Boeing 777",
+        "FirstClassSeats": 8,
+        "EconomyClassSeats": 120,
+        "WeeklyFlightDays": "1357",
+        "stops": [
+            {"AirportCode": "CAN", "stopOrder": 1},
+            {"AirportCode": "SZX", "stopOrder": 2}
+        ],
+    },
+    {
+        "flightID": "3U8888",
+        "aircraftType": "Airbus A320",
+        "FirstClassSeats": 6,
+        "EconomyClassSeats": 90,
+        "WeeklyFlightDays": "246",
+        "stops": [
+            {"AirportCode": "CTU", "stopOrder": 1},
+            {"AirportCode": "PVG", "stopOrder": 2}
+        ],
+    }
+]
+
+SAMPLE_CABIN_PRICING_DATA = [
+    {
+        "flightID": "MU5106",
+        "departureAirport": "PEK",
+        "arrivalAirport": "SHA",
+        "cabinClass": "economy",
+        "price": 100,
+        "discount": 0
+    },
+    {
+        "flightID": "CZ3456",
+        "departureAirport": "CAN",
+        "arrivalAirport": "SZX",
+        "cabinClass": "economy",
+        "price": 120,
+        "discount": 0
+    },
+    {
+        "flightID": "3U8888",
+        "departureAirport": "CTU",
+        "arrivalAirport": "PVG",
+        "cabinClass": "economy",
+        "price": 110,
+        "discount": 0
+    }
+]
+
+SAMPLE_TRANSACTION_DATA = [
+    {
+        "idNumber": "1234567890",
+        "cabinPricingID": 1,
+        "flightDate": "2025-07-01"
+    },
+    {
+        "idNumber": "2234567890",
+        "cabinPricingID": 2,
+        "flightDate": "2025-07-02"
+    },
+    {
+        "idNumber": "3234567890",
+        "cabinPricingID": 3,
+        "flightDate": "2025-07-03"
+    }
+]
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "123456"
@@ -81,7 +152,11 @@ def test_endpoint(endpoint, method="GET", data=None, admin=False):
     """Tests a specific endpoint."""
     url = f"{BASE_URL}{endpoint}"
     start_time = time.time()
-    response = make_request(url, method, data, admin=admin)
+    if type(data) is list:
+        for item in data:
+            response = make_request(url, method, item, admin=admin)
+    else:        
+        response = make_request(url, method, data, admin=admin)
     end_time = time.time()
     duration = end_time - start_time
 
@@ -111,17 +186,88 @@ def test_create_cabin_pricing():
     test_endpoint("/admin/create-product", method="POST", data=SAMPLE_CABIN_PRICING_DATA, admin=True)
 
 def test_make_transaction():
-    test_endpoint("/passenger/transaction", method="POST", data=SAMPLE_TRANSACTION_DATA)
+    # For each transaction, try to find a matching product and use its PricingID and price
+    for i, transaction in enumerate(SAMPLE_TRANSACTION_DATA):
+        flight_id = SAMPLE_CABIN_PRICING_DATA[i % len(SAMPLE_CABIN_PRICING_DATA)]["flightID"]
+        products = make_request(f"{BASE_URL}/admin/products/{flight_id}", method="GET", admin=True)
+        if not products or not isinstance(products, list):
+            print(f"No products found for transaction test for flight {flight_id}.")
+            continue
+        # Pick the first matching product
+        product = None
+        for p in products:
+            if (
+                p.get("DepartureAirportID") == SAMPLE_CABIN_PRICING_DATA[i % len(SAMPLE_CABIN_PRICING_DATA)]["departureAirport"] and
+                p.get("ArrivalAirportID") == SAMPLE_CABIN_PRICING_DATA[i % len(SAMPLE_CABIN_PRICING_DATA)]["arrivalAirport"] and
+                p.get("CabinLevel") == SAMPLE_CABIN_PRICING_DATA[i % len(SAMPLE_CABIN_PRICING_DATA)]["cabinClass"]
+            ):
+                product = p
+                break
+        if not product:
+            print(f"No matching product found for transaction test for flight {flight_id}.")
+            continue
+        cabin_pricing_id = product.get("PricingID")
+        price = product.get("Price")
+        if not cabin_pricing_id or price is None:
+            print(f"No valid PricingID or Price for transaction test for flight {flight_id}.")
+            continue
+        from datetime import datetime, timedelta
+        flight_date = (datetime.now() + timedelta(days=i+1)).strftime("%Y-%m-%d")
+        transaction_data = {
+            "idNumber": transaction["idNumber"],
+            "cabinPricingID": cabin_pricing_id,
+            "flightDate": flight_date,
+            "price": price
+        }
+        test_endpoint("/passenger/transaction", method="POST", data=transaction_data)
 
 # Add more test functions as needed for other endpoints
 
 def write_example_data(): 
-    """Writes example data to the database."""
-    test_add_city()
-    # test_add_airport()
-    # test_create_flight()
-    # test_create_cabin_pricing()
-    # test_make_transaction()
+    """Writes example data to the database, but skips if already present."""
+    # Add city if not present
+    cities = make_request(f"{BASE_URL}/admin/cities", method="GET", admin=True)
+    city_names = [c.get("CityName") or c.get("Cityname") for c in (cities or [])]
+    for name in SAMPLE_CITY_DATA["Cityname"]:
+        if name not in city_names:
+            test_endpoint("/admin/manage-city", method="POST", data={"Cityname": name}, admin=True)
+        else:
+            print(f"City '{name}' already exists, skipping add.")
+
+    # Add airport if not present
+    airports = make_request(f"{BASE_URL}/admin/airports", method="GET", admin=True)
+    airport_codes = [a.get("AirportCode") for a in (airports or [])]
+    for airport in SAMPLE_AIRPORT_DATA:
+        if airport["AirportCode"] not in airport_codes:
+            test_endpoint("/admin/manage-airport", method="POST", data=airport, admin=True)
+        else:
+            print(f"Airport '{airport['AirportCode']}' already exists, skipping add.")
+
+    # Add flight if not present
+    flights = make_request(f"{BASE_URL}/admin/flights", method="GET", admin=True)
+    flight_ids = [f.get("FlightID") for f in (flights or [])]
+    for flight in SAMPLE_FLIGHT_DATA:
+        if flight["flightID"] not in flight_ids:
+            test_endpoint("/admin/flights", method="POST", data=flight, admin=True)
+        else:
+            print(f"Flight '{flight['flightID']}' already exists, skipping add.")
+
+    # Add cabin pricing if not present (check by flightID, departure, arrival, cabinClass)
+    for pricing in SAMPLE_CABIN_PRICING_DATA:
+        products = make_request(f"{BASE_URL}/admin/products/{pricing['flightID']}", method="GET", admin=True)
+        found = False
+        for p in (products or []):
+            if (
+                p.get("DepartureAirportID") == pricing["departureAirport"] and
+                p.get("ArrivalAirportID") == pricing["arrivalAirport"] and
+                p.get("CabinLevel") == pricing["cabinClass"]
+            ):
+                found = True
+                break
+        if not found:
+            test_endpoint("/admin/create-product", method="POST", data=pricing, admin=True)
+        else:
+            print(f"Cabin pricing for flight {pricing['flightID']} {pricing['departureAirport']}->{pricing['arrivalAirport']} {pricing['cabinClass']} already exists, skipping add.")
 
 
 
@@ -142,25 +288,27 @@ def worker(thread_id):
 
 def main():
     """Main function to execute concurrent tests."""
+    # Clear all data before running tests using test_endpoint
+    test_endpoint("/admin/clear-all", method="POST", admin=True) # EXETREMELY DANGEROUS, USE WITH CAUTION
     write_example_data()
-    # start_time = time.time()
-    # print("Starting concurrent tests...")
+    start_time = time.time()
+    print("Starting concurrent tests...")
 
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
-    #     futures = [executor.submit(worker, i) for i in range(NUM_THREADS)]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+        futures = [executor.submit(worker, i) for i in range(NUM_THREADS)]
 
-    #     # Wait for all threads to complete
-    #     for future in concurrent.futures.as_completed(futures):
-    #         try:
-    #             future.result()  # If there was an exception, it will be raised here
-    #         except Exception as e:
-    #             print(f"A thread encountered an error: {e}")
+        # Wait for all threads to complete
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()  # If there was an exception, it will be raised here
+            except Exception as e:
+                print(f"A thread encountered an error: {e}")
 
-    # end_time = time.time()
-    # total_duration = end_time - start_time
+    end_time = time.time()
+    total_duration = end_time - start_time
 
-    # print("Concurrent tests finished.")
-    # print(f"Total duration: {total_duration:.2f} seconds")
+    print("Concurrent tests finished.")
+    print(f"Total duration: {total_duration:.2f} seconds")
 
 if __name__ == "__main__":
     main()
