@@ -19,14 +19,19 @@ const FlightScheduling = () => {
     const [price, setPrice] = useState('');
     const [discount, setDiscount] = useState('');
     const [adjacentAirports, setAdjacentAirports] = useState([]);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    const getToken = () => localStorage.getItem('token');
 
     const fetchFlights = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights`, {
+                headers: { Authorization: getToken() }
+            });
             setFlights(response.data);
         } catch (error) {
-            console.error('获取航班数据失败:', error);
+            setError('获取航班信息失败');
         }
     };
 
@@ -166,6 +171,19 @@ const FlightScheduling = () => {
                 console.error('删除产品失败:', error);
                 alert('删除产品失败，请稍后重试');
             }
+        }
+    };
+
+    const handleDeleteFlight = async (flightId) => {
+        if (!window.confirm('确定要删除该航班吗？')) return;
+        try {
+            await axios.delete(
+                `${process.env.REACT_APP_API_URL}/api/admin/flights/${flightId}`,
+                { headers: { Authorization: getToken() } }
+            );
+            fetchFlights();
+        } catch (error) {
+            setError('删除航班失败');
         }
     };
 

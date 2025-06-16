@@ -10,10 +10,14 @@ const ProductCreation = () => {
   const [price, setPrice] = useState('');
   const [discount, setDiscount] = useState('');
 
+  const getToken = () => localStorage.getItem('token');
+
   useEffect(() => {
     const fetchFlights = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights`);
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights`, {
+          headers: { Authorization: getToken() }
+        });
         setFlights(response.data);
       } catch (error) {
         console.error('获取航班列表失败', error);
@@ -25,14 +29,18 @@ const ProductCreation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/create-product', {
-        flightId: selectedFlight,
-        departureAirport,
-        arrivalAirport,
-        cabinClass,
-        price,
-        discount
-      });
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/admin/create-product`,
+        {
+          flightId: selectedFlight,
+          departureAirport,
+          arrivalAirport,
+          cabinClass,
+          price,
+          discount
+        },
+        { headers: { Authorization: getToken() } }
+      );
       alert('产品制定成功');
     } catch (error) {
       console.error('产品制定失败', error);
@@ -86,4 +94,4 @@ const ProductCreation = () => {
   );
 };
 
-export default ProductCreation;    
+export default ProductCreation;

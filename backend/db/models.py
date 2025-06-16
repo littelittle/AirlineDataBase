@@ -1,21 +1,36 @@
 import traceback
 
-from db.db_manager import execute_query, fetch_query, get_db_connection
+from db.db_manager import execute_query,execute_many, fetch_query, get_db_connection
 from db.utils import *
 
 # ====================== 城市 ======================
 class City:
     @staticmethod
-    def add_city(Cityname):
-        """添加城市"""
+    def add_city(citynames):
+        """添加一个或多个城市，返回失败的城市列表"""
         conn = get_db_connection()
         query = "INSERT INTO City (CityName) VALUES (%s)"
-        params = (Cityname,)
+        failed = []
+        success = []
         try:
-            execute_query(conn, query, params)
-        except Exception as e:
-            print(f"添加城市时出错: {e}")
-            traceback.print_exc()
+            if isinstance(citynames, str):
+                try:
+                    params = (citynames,)
+                    execute_query(conn, query, params)
+                    success.append(citynames)
+                except Exception as e:
+                    failed.append(citynames)
+            elif isinstance(citynames, list):
+                for name in citynames:
+                    try:
+                        params = (name,)
+                        execute_query(conn, query, params)
+                        success.append(name)
+                    except Exception as e:
+                        failed.append(name)
+            else:
+                raise ValueError("citynames must be a string or a list of strings")
+            return {"success": success, "failed": failed}
         finally:
             conn.close()
     @staticmethod

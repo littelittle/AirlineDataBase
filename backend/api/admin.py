@@ -23,7 +23,11 @@ import datetime
 # ====================== Admin Authentications ======================# 
 
 
-def admin_required(f):
+def admin_required(f): 
+    """
+    This decorator must be put above any admin API route to ensure that the user is an admin. 
+    And it must be put right above the definition to make it applied first
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Extract token from headers/cookies
@@ -39,27 +43,41 @@ def admin_required(f):
 
 
 
+
+
+
+
+
+
 # ====================== 管理城市 ======================# 添加城市信息
-@admin_required
+
 @admin_api.route('/manage-city', methods=['POST'])
+@admin_required
 def add_city():
     data = request.get_json()
-    required_fields = ['Cityname']
-    if not all(field in data for field in required_fields):
+    if 'Cityname' not in data:
         return jsonify({"error": "缺少必要字段"}), 400
 
+    citynames = data['Cityname']
+    if not isinstance(citynames, (str, list)):
+        return jsonify({"error": "Cityname must be a string or a list of strings"}), 400
+
     try:
-        City.add_city(
-            data['Cityname'],
-        )
-        return jsonify({"message": "城市创建成功"}), 200
+        result = City.add_city(citynames)
+        msg = "城市创建成功"
+        if isinstance(citynames, list):
+            msg = f"{len(result['success'])} 个城市创建成功"
+        response = {"message": msg, "success": result['success'], "failed": result['failed']}
+        if result['failed']:
+            response["warning"] = f"以下城市未能添加（可能已存在）: {', '.join(result['failed'])}"
+        return jsonify(response), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 # 获取所有城市信息
-@admin_required
 @admin_api.route('/cities', methods=['GET'])
+@admin_required
 def get_cities():
     try:
         cities = City.get_cities()
@@ -69,8 +87,8 @@ def get_cities():
 
 
 # 删除城市信息
-@admin_required
 @admin_api.route('/manage-city/<int:city_id>', methods=['DELETE'])
+@admin_required
 def delete_city(city_id):
     try:
         City.delete_city(city_id)
@@ -80,8 +98,8 @@ def delete_city(city_id):
 
 
 # 更新城市信息
-@admin_required
 @admin_api.route('/manage-city/<int:city_id>', methods=['PUT'])
+@admin_required
 def update_city(city_id):
     data = request.get_json()
     required_fields = ['Cityname']
@@ -100,8 +118,8 @@ def update_city(city_id):
 # ====================== 管理机场 ======================
 
 # 添加机场信息
-@admin_required
 @admin_api.route('/manage-airport', methods=['POST'])
+@admin_required
 def add_airport():
     data = request.get_json()
     required_fields = ['AirportCode', 'CityID', 'Name']
@@ -120,8 +138,8 @@ def add_airport():
 
 
 # 获取所有机场信息
-@admin_required
 @admin_api.route('/airports', methods=['GET'])
+@admin_required
 def get_airports():
     try:
         airports = Airport.get_airports()
@@ -131,8 +149,8 @@ def get_airports():
 
 
 # 删除机场信息
-@admin_required
 @admin_api.route('/manage-airport/<string:AirportCode>', methods=['DELETE'])
+@admin_required
 def delete_airport(AirportCode):
     try:
         Airport.delete_airport(AirportCode)
@@ -142,8 +160,8 @@ def delete_airport(AirportCode):
 
 
 # 更新机场信息
-@admin_required
 @admin_api.route('/manage-airport/<string:AirportCode>', methods=['PUT'])
+@admin_required
 def update_airport(AirportCode):
     data = request.get_json()
     required_fields = ['CityID', 'Name']
@@ -163,8 +181,8 @@ def update_airport(AirportCode):
 # ====================== 航班管理 ======================
 
 # 航班相关接口
-@admin_required
 @admin_api.route('/flights', methods=['POST'])
+@admin_required
 def create_flight_api():
     data = request.get_json()
     flight_id = data.get('flightID')
@@ -185,14 +203,14 @@ def create_flight_api():
     except Exception as e:
         return jsonify({"error": f"更新航班信息时出错: {str(e)}"}), 500
 
-@admin_required
 @admin_api.route('/flights', methods=['GET'])
+@admin_required
 def get_all_flights_api():
     flights = Flight.get_all_flights()
     return jsonify(flights), 200
 
-@admin_required
 @admin_api.route('/flights/<flight_id>', methods=['GET'])
+@admin_required
 def get_flight_api(flight_id):
     flight = Flight.get_flight(flight_id)
     if flight:
@@ -200,8 +218,9 @@ def get_flight_api(flight_id):
     else:
         return jsonify({"error": "未找到该航班"}), 404
 
-@admin_required
+
 @admin_api.route('/flights/<flight_id>', methods=['PUT'])
+@admin_required
 def update_flight_api(flight_id):
     data = request.get_json()
     aircraft_type = data.get('AircraftType')
@@ -216,8 +235,9 @@ def update_flight_api(flight_id):
     except Exception as e:
         return jsonify({"error": f"更新航班信息时出错: {str(e)}"}), 500
 
-@admin_required
+
 @admin_api.route('/flights/<flight_id>', methods=['DELETE'])
+@admin_required
 def delete_flight_api(flight_id):
     try:
         Flight.delete_flight(flight_id)
@@ -236,8 +256,8 @@ def is_ordered_subsequence(old_list, new_list):
     return old_idx == len(old_list)
 
 # 航班与机场关联接口
-@admin_required
 @admin_api.route('/flights/<flight_id>/airports', methods=['POST'])
+@admin_required
 def add_flight_airport_api(flight_id):
     data = request.get_json()
     # airport_code = data.get('AirportCode')
@@ -270,14 +290,16 @@ def add_flight_airport_api(flight_id):
     # except Exception as e:
     #     return jsonify({"error": "航班经停机场添加失败"}), 500
 
-@admin_required
+
 @admin_api.route('/flights/<flight_id>/airports', methods=['GET'])
+@admin_required
 def get_flight_airports_api(flight_id):
     airports = FlightAirport.get_flight_airports(flight_id)
     return jsonify(airports), 200
 
-@admin_required
+
 @admin_api.route('/flights/<flight_id>/airports/<stop_order>', methods=['PUT'])
+@admin_required
 def update_flight_airport_api(flight_id, stop_order):
     data = request.get_json()
     airport_code = data.get('AirportCode')
@@ -289,8 +311,9 @@ def update_flight_airport_api(flight_id, stop_order):
     except Exception as e:
         return jsonify({"error": "航班经停机场信息更新失败"}), 500
 
-@admin_required
+
 @admin_api.route('/flights/<flight_id>/airports/<stop_order>', methods=['DELETE'])
+@admin_required
 def delete_flight_airport_api(flight_id, stop_order):
     try:
         FlightAirport.delete_flight_airport(flight_id, int(stop_order))
@@ -300,8 +323,8 @@ def delete_flight_airport_api(flight_id, stop_order):
 
 # ====================== 制定产品（舱位定价） ======================
 # 创建产品
-@admin_required
 @admin_api.route('/create-product', methods=['POST'])
+@admin_required
 def create_product():
     data = request.get_json()
     required_fields = ['flightID', 'departureAirport', 'arrivalAirport', 'cabinClass', 'price', 'discount']
@@ -323,8 +346,8 @@ def create_product():
 
 
 # 删除产品
-@admin_required
 @admin_api.route('/delete-product/<int:id>', methods=['DELETE'])
+@admin_required
 def delete_product(id):
     try:
         CabinPricing.delete_pricing(id)
@@ -334,8 +357,8 @@ def delete_product(id):
 
 
 # 更新产品
-@admin_required
 @admin_api.route('/update-product/<int:id>', methods=['PUT'])
+@admin_required
 def update_product(id):
     data = request.get_json()
     required_fields = ['flightID','departureAirport', 'arrivalAirport', 'cabinClass', 'price', 'discount']
@@ -358,8 +381,8 @@ def update_product(id):
 
 
 # 查询所有产品
-@admin_required
 @admin_api.route('/products/<FlightID>', methods=['GET'])
+@admin_required
 def get_products(FlightID):
     try:
         pricings = CabinPricing.get_all_pricings(FlightID)
@@ -380,8 +403,8 @@ def get_products(FlightID):
 # ====================== 查询交易记录 ======================
 
 # 查询交易记录
-@admin_required
 @admin_api.route('/transactions', methods=['GET'])
+@admin_required
 def get_transactions():
     try:
         transactions = TicketSale.get_all_transactions()

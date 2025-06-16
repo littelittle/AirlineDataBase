@@ -11,6 +11,9 @@ git clone https://github.com/littelittle/AirlineDataBase.git
 ### create the database schema
 
 ```terminal
+# windows
+cat db\schema\airlinedb_schema.sql | mysql -u root -p 
+# or linux/macos
 cat db/schema/airlinedb_schema.sql | mysql -u root -p
 ```
 
@@ -22,10 +25,10 @@ npm install
 npm start
 ```
 
-Runs the app in the development mode.\
+Runs the app in the development mode.
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-The page will reload when you make changes.\
+The page will reload when you make changes.
 You may also see any lint errors in the console.
 
 ### run the backend
@@ -48,6 +51,7 @@ Open a new terminal.
 
 ```terminal
 cd backend
+pip install -r requirements.txt
 flask run
 ```
 
@@ -59,7 +63,7 @@ temporary websites `http://localhost:3000/admin` and `http://localhost:3000/pass
 
 The mysql-connector-python does not support MySQL 8.x's default authentication plugin caching_sha2_password, causing database query failures. (Respones may be `{"error":"Authentication plugin 'caching_sha2_password' is not supported"}`)
 
-You may change the MySQL user's authentication method​​:
+You may change the MySQL user's authentication method:
 
 ```SQL
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'your_password';
