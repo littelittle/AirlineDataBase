@@ -11,7 +11,7 @@ git clone https://github.com/littelittle/AirlineDataBase.git
 ### create the database schema
 
 ```terminal
-cat db\schema\airlinedb_schema.sql | mysql -u root -p
+cat db/schema/airlinedb_schema.sql | mysql -u root -p
 ```
 
 ### run the frontend
