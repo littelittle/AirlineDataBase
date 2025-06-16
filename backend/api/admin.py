@@ -1,6 +1,15 @@
+import pyrootutils
+
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=["pyproject.toml"],
+    pythonpath=True,
+    dotenv=True,
+)
+
 import json
 from decimal import Decimal
-
+from functools import wraps
 from db.models import Airport, CabinPricing, City, Flight, FlightAirport, TicketSale
 from flask import Blueprint, jsonify, request
 
@@ -8,8 +17,30 @@ admin_api = Blueprint('admin_api', __name__)
 
 import sqlite3  # 假设使用 SQLite 数据库，你可以根据实际情况更换为其他数据库
 
+from db.utils import verify_token  
+import datetime
+
+# ====================== Admin Authentications ======================# 
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Extract token from headers/cookies
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({'error': 'Requesting an admin api without token'}), 401
+        # Verify token and extract user info (implement verify_token yourself)
+        user = verify_token(token)
+        if not user or user.get('role') != 'admin':
+            return jsonify({'error': 'Admin access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 
 # ====================== 管理城市 ======================# 添加城市信息
+@admin_required
 @admin_api.route('/manage-city', methods=['POST'])
 def add_city():
     data = request.get_json()
@@ -27,6 +58,7 @@ def add_city():
 
 
 # 获取所有城市信息
+@admin_required
 @admin_api.route('/cities', methods=['GET'])
 def get_cities():
     try:
@@ -37,6 +69,7 @@ def get_cities():
 
 
 # 删除城市信息
+@admin_required
 @admin_api.route('/manage-city/<int:city_id>', methods=['DELETE'])
 def delete_city(city_id):
     try:
@@ -47,6 +80,7 @@ def delete_city(city_id):
 
 
 # 更新城市信息
+@admin_required
 @admin_api.route('/manage-city/<int:city_id>', methods=['PUT'])
 def update_city(city_id):
     data = request.get_json()
@@ -66,6 +100,7 @@ def update_city(city_id):
 # ====================== 管理机场 ======================
 
 # 添加机场信息
+@admin_required
 @admin_api.route('/manage-airport', methods=['POST'])
 def add_airport():
     data = request.get_json()
@@ -85,6 +120,7 @@ def add_airport():
 
 
 # 获取所有机场信息
+@admin_required
 @admin_api.route('/airports', methods=['GET'])
 def get_airports():
     try:
@@ -95,6 +131,7 @@ def get_airports():
 
 
 # 删除机场信息
+@admin_required
 @admin_api.route('/manage-airport/<string:AirportCode>', methods=['DELETE'])
 def delete_airport(AirportCode):
     try:
@@ -105,6 +142,7 @@ def delete_airport(AirportCode):
 
 
 # 更新机场信息
+@admin_required
 @admin_api.route('/manage-airport/<string:AirportCode>', methods=['PUT'])
 def update_airport(AirportCode):
     data = request.get_json()
@@ -125,6 +163,7 @@ def update_airport(AirportCode):
 # ====================== 航班管理 ======================
 
 # 航班相关接口
+@admin_required
 @admin_api.route('/flights', methods=['POST'])
 def create_flight_api():
     data = request.get_json()
@@ -146,11 +185,13 @@ def create_flight_api():
     except Exception as e:
         return jsonify({"error": f"更新航班信息时出错: {str(e)}"}), 500
 
+@admin_required
 @admin_api.route('/flights', methods=['GET'])
 def get_all_flights_api():
     flights = Flight.get_all_flights()
     return jsonify(flights), 200
 
+@admin_required
 @admin_api.route('/flights/<flight_id>', methods=['GET'])
 def get_flight_api(flight_id):
     flight = Flight.get_flight(flight_id)
@@ -159,6 +200,7 @@ def get_flight_api(flight_id):
     else:
         return jsonify({"error": "未找到该航班"}), 404
 
+@admin_required
 @admin_api.route('/flights/<flight_id>', methods=['PUT'])
 def update_flight_api(flight_id):
     data = request.get_json()
@@ -174,6 +216,7 @@ def update_flight_api(flight_id):
     except Exception as e:
         return jsonify({"error": f"更新航班信息时出错: {str(e)}"}), 500
 
+@admin_required
 @admin_api.route('/flights/<flight_id>', methods=['DELETE'])
 def delete_flight_api(flight_id):
     try:
@@ -193,6 +236,7 @@ def is_ordered_subsequence(old_list, new_list):
     return old_idx == len(old_list)
 
 # 航班与机场关联接口
+@admin_required
 @admin_api.route('/flights/<flight_id>/airports', methods=['POST'])
 def add_flight_airport_api(flight_id):
     data = request.get_json()
@@ -226,11 +270,13 @@ def add_flight_airport_api(flight_id):
     # except Exception as e:
     #     return jsonify({"error": "航班经停机场添加失败"}), 500
 
+@admin_required
 @admin_api.route('/flights/<flight_id>/airports', methods=['GET'])
 def get_flight_airports_api(flight_id):
     airports = FlightAirport.get_flight_airports(flight_id)
     return jsonify(airports), 200
 
+@admin_required
 @admin_api.route('/flights/<flight_id>/airports/<stop_order>', methods=['PUT'])
 def update_flight_airport_api(flight_id, stop_order):
     data = request.get_json()
@@ -243,6 +289,7 @@ def update_flight_airport_api(flight_id, stop_order):
     except Exception as e:
         return jsonify({"error": "航班经停机场信息更新失败"}), 500
 
+@admin_required
 @admin_api.route('/flights/<flight_id>/airports/<stop_order>', methods=['DELETE'])
 def delete_flight_airport_api(flight_id, stop_order):
     try:
@@ -253,6 +300,7 @@ def delete_flight_airport_api(flight_id, stop_order):
 
 # ====================== 制定产品（舱位定价） ======================
 # 创建产品
+@admin_required
 @admin_api.route('/create-product', methods=['POST'])
 def create_product():
     data = request.get_json()
@@ -275,6 +323,7 @@ def create_product():
 
 
 # 删除产品
+@admin_required
 @admin_api.route('/delete-product/<int:id>', methods=['DELETE'])
 def delete_product(id):
     try:
@@ -285,6 +334,7 @@ def delete_product(id):
 
 
 # 更新产品
+@admin_required
 @admin_api.route('/update-product/<int:id>', methods=['PUT'])
 def update_product(id):
     data = request.get_json()
@@ -308,6 +358,7 @@ def update_product(id):
 
 
 # 查询所有产品
+@admin_required
 @admin_api.route('/products/<FlightID>', methods=['GET'])
 def get_products(FlightID):
     try:
@@ -329,6 +380,7 @@ def get_products(FlightID):
 # ====================== 查询交易记录 ======================
 
 # 查询交易记录
+@admin_required
 @admin_api.route('/transactions', methods=['GET'])
 def get_transactions():
     try:

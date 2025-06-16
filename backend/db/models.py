@@ -468,6 +468,46 @@ class Passenger:
             passenger_id = conn.cursor().lastrowid  # 获取自增 ID
         conn.close()
         return passenger_id
+    
+    @staticmethod
+    def update_passenger_password(passenger_name, new_password):
+        """更新指定乘客的密码（重置密码）"""
+        conn = None
+        try:
+            conn = get_db_connection()
+            salt = generate_salt()
+            hashed_pwd = hash_password(new_password, salt)
+            query = """
+                UPDATE Passenger SET password_hash = %s, salt = %s, updated_at = NOW()
+                WHERE PassengerName = %s
+            """
+            params = (hashed_pwd, salt, passenger_name)
+            execute_query(conn, query, params)
+            conn.commit()
+            print(f"Password for {passenger_name} updated.")
+            return True
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            print(f"Error updating password for {passenger_name}: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def ensure_admin_exists():
+        """确保管理员账号存在，并重置密码为默认值"""
+        admin = Passenger.get_passenger_by_name('admin')
+        if not admin:
+            # 创建管理员账号
+            Passenger.create_passenger_with_password('admin', '123456')
+            print("Admin user created with default password '123456'.")
+        else:
+            # 重置管理员密码为默认值
+            Passenger.update_passenger_password('admin', '123456')
+            print("Admin user password reset to default '123456'.")
+
 
 # ====================== 售票记录 ======================
 class TicketSale:

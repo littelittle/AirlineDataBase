@@ -2,8 +2,9 @@ import json
 from decimal import Decimal
 
 from db.models import Airport, CabinPricing, City, Flight, FlightAirport, TicketSale, Passenger
-from db.utils import verify_password, generate_example_token
+from db.utils import verify_password, generate_jwt_token
 from flask import Blueprint, jsonify, request
+from flask_cors import cross_origin
 
 auth_api = Blueprint('auth_api', __name__)
 
@@ -33,11 +34,12 @@ def login(): # Make sure this function is correctly routed by your Flask app
             salt=passenger_data['salt']
         )
 
-        if is_password_valid:
-            # Password is correct, generate a token (use a real JWT library in later versions)
-            token = generate_example_token(passenger_data['PassengerID'], passenger_data['PassengerName'])
+        if is_password_valid: 
             username = passenger_data['PassengerName']
             role = 'admin' if username == 'admin' else 'passenger'
+            # Password is correct, generate a token 
+            token = generate_jwt_token(passenger_data['PassengerID'], passenger_data['PassengerName'], role)
+            
             response = {
                 "role": role, # if username is not admin, set role to passenger
                 "idNumber": str(passenger_data['PassengerID']), # Use PassengerID(the primary key) as idNumber
@@ -53,6 +55,7 @@ def login(): # Make sure this function is correctly routed by your Flask app
         return jsonify({"error": "Invalid username or password"}), 401
     
 @auth_api.route('/register', methods=['GET'])
+@cross_origin(origin='http://localhost:3000', methods=['GET'], supports_credentials=True)
 def register(): # Make sure this function is correctly routed by your Flask app
     """
     Handles passenger login.
