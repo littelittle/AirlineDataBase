@@ -8,47 +8,57 @@ const AirportManaging = () => {
   const [airportName, setAirportName] = useState('');
   const [airports, setAirports] = useState([]);
   const [selectedAirport, setSelectedAirport] = useState(null);
+  const [error, setError] = useState(null);
 
-  const fetchAirports = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/airports`);
-      setAirports(response.data);
-    } catch (error) {
-      console.error('获取机场信息失败', error);
-    }
-  };
+  const getToken = () => localStorage.getItem('token');
 
   useEffect(() => {
     fetchAirports();
   }, []);
 
+  const fetchAirports = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/airports`, {
+        headers: { Authorization: getToken() }
+      });
+      setAirports(response.data);
+    } catch (error) {
+      setError('获取机场信息失败');
+    }
+  };
+
   const handleAddAirport = async (e) => {
     e.preventDefault();
+    if (!airportCode.trim() || !cityID || !airportName.trim()) {
+      setError('请填写所有字段');
+      return;
+    }
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/admin/manage-airport`, {
-        AirportCode: airportCode,
-        CityID: cityID,
-        Name: airportName
-      });
-      alert('机场添加成功');
-      fetchAirports();
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/admin/manage-airport`,
+        { AirportCode: airportCode, CityID: cityID, Name: airportName },
+        { headers: { Authorization: getToken() } }
+      );
+      setError(null);
       setAirportCode('');
       setCityID('');
       setAirportName('');
+      fetchAirports();
     } catch (error) {
-      console.error('机场添加失败', error);
+      setError('添加机场失败');
     }
   };
 
   const handleDeleteAirport = async (AirportCode) => {
-    if (window.confirm('确定要删除这个机场吗？')) {
-      try {
-        await axios.delete(`${process.env.REACT_APP_API_URL}/api/admin/manage-airport/${AirportCode}`);
-        alert('机场删除成功');
-        fetchAirports();
-      } catch (error) {
-        console.error('机场删除失败', error);
-      }
+    if (!window.confirm('确定要删除这个机场吗？')) return;
+    try {
+      await axios.delete(
+        `${process.env.REACT_APP_API_URL}/api/admin/manage-airport/${AirportCode}`,
+        { headers: { Authorization: getToken() } }
+      );
+      fetchAirports();
+    } catch (error) {
+      setError('删除机场失败');
     }
   };
 
@@ -102,6 +112,7 @@ const AirportManaging = () => {
           margin="normal"
           fullWidth
         />
+        {error && <Typography color="error">{error}</Typography>}
         <Box sx={{ mt: 2 }}>
           <Button type="submit" variant="contained" color="primary">
             {selectedAirport ? '更新机场' : '添加机场'}

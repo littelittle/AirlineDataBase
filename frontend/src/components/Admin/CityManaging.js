@@ -8,9 +8,13 @@ const CityManaging = () => {
     const [selectedCity, setSelectedCity] = useState(null);
     const [error, setError] = useState(null);
 
+    const getToken = () => localStorage.getItem('token');
+
     const fetchCities = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/cities`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/cities`, {
+                headers: { Authorization: getToken() }
+            });
             const mappedCities = (response.data || []).map(city => ({
                 CityID: city.CityID,
                 Cityname: city.CityName
@@ -34,9 +38,11 @@ const CityManaging = () => {
             return;
         }
         try {
-            await axios.post(`${process.env.REACT_APP_API_URL}/api/admin/manage-city`, {
-                Cityname: cityName
-            });
+            await axios.post(
+                `${process.env.REACT_APP_API_URL}/api/admin/manage-city`,
+                { Cityname: cityName },
+                { headers: { Authorization: getToken() } }
+            );
             alert('城市添加成功');
             fetchCities();
             setCityName('');
@@ -50,7 +56,10 @@ const CityManaging = () => {
     const handleDeleteCity = async (cityId) => {
         if (window.confirm('确定要删除这个城市吗？')) {
             try {
-                await axios.delete(`${process.env.REACT_APP_API_URL}/api/admin/manage-city/${cityId}`);
+                await axios.delete(
+                    `${process.env.REACT_APP_API_URL}/api/admin/manage-city/${cityId}`,
+                    { headers: { Authorization: getToken() } }
+                );
                 alert('城市删除成功');
                 fetchCities();
                 setError(null);
@@ -73,9 +82,11 @@ const CityManaging = () => {
             return;
         }
         try {
-            await axios.put(`${process.env.REACT_APP_API_URL}/api/admin/manage-city/${selectedCity.CityID}`, {
-                Cityname: cityName
-            });
+            await axios.put(
+                `${process.env.REACT_APP_API_URL}/api/admin/manage-city/${selectedCity.CityID}`,
+                { Cityname: cityName },
+                { headers: { Authorization: getToken() } }
+            );
             alert('城市信息更新成功');
             fetchCities();
             setSelectedCity(null);

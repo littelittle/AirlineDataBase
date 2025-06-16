@@ -1,21 +1,36 @@
 import traceback
 
-from db.db_manager import execute_query, fetch_query, get_db_connection
+from db.db_manager import execute_query,execute_many, fetch_query, get_db_connection
 from db.utils import *
 
 # ====================== 城市 ======================
 class City:
     @staticmethod
-    def add_city(Cityname):
-        """添加城市"""
+    def add_city(citynames):
+        """添加一个或多个城市，返回失败的城市列表"""
         conn = get_db_connection()
         query = "INSERT INTO City (CityName) VALUES (%s)"
-        params = (Cityname,)
+        failed = []
+        success = []
         try:
-            execute_query(conn, query, params)
-        except Exception as e:
-            print(f"添加城市时出错: {e}")
-            traceback.print_exc()
+            if isinstance(citynames, str):
+                try:
+                    params = (citynames,)
+                    execute_query(conn, query, params)
+                    success.append(citynames)
+                except Exception as e:
+                    failed.append(citynames)
+            elif isinstance(citynames, list):
+                for name in citynames:
+                    try:
+                        params = (name,)
+                        execute_query(conn, query, params)
+                        success.append(name)
+                    except Exception as e:
+                        failed.append(name)
+            else:
+                raise ValueError("citynames must be a string or a list of strings")
+            return {"success": success, "failed": failed}
         finally:
             conn.close()
     @staticmethod
@@ -67,6 +82,18 @@ class City:
         except Exception as e:
             print(f"更新城市信息时出错: {e}")
             traceback.print_exc()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_city_id_by_name(city_name):
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            query = "SELECT CityID FROM City WHERE CityName = %s"
+            cursor.execute(query, (city_name,))
+            result = cursor.fetchone()
+            return result[0] if result else None
         finally:
             conn.close()
 
@@ -191,14 +218,21 @@ class Flight:
 
     @staticmethod
     def delete_flight(flight_id):
-        """删除航班信息"""
+        """删除航班信息，若存在产品则禁止删除"""
         conn = get_db_connection()
-        # 先删除关联表中的数据
-        FlightAirport.delete_flight_airports(flight_id)
-        query = "DELETE FROM Flight WHERE FlightID = %s"
-        params = (flight_id,)
-        execute_query(conn, query, params)
-        conn.close()
+        try:
+            # 检查是否有 CabinPricing 关联该航班
+            query_check = "SELECT COUNT(*) as cnt FROM CabinPricing WHERE FlightID = %s"
+            params = (flight_id,)
+            result = fetch_query(conn, query_check, params)
+            if result and result[0]['cnt'] > 0:
+                raise Exception("该航班仍存在产品（舱位定价），请先删除所有产品后再删除航班！")
+            # 先删除关联表中的数据
+            FlightAirport.delete_flight_airports(flight_id)
+            query = "DELETE FROM Flight WHERE FlightID = %s"
+            execute_query(conn, query, params)
+        finally:
+            conn.close()
 
 # ====================== 航班与机场关联 ======================
 class FlightAirport:
@@ -211,6 +245,7 @@ class FlightAirport:
         VALUES (%s,%s,%s)
         """
         params = (flight_id, airport_code, stop_order)
+        print(f"添加航班经停机场: {flight_id}, {airport_code}, {stop_order}")
         execute_query(conn, query, params)
         conn.close()
 

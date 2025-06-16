@@ -5,10 +5,14 @@ import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead
 const TransactionRecord = () => {
     const [transactions, setTransactions] = useState([]);
 
+    const getToken = () => localStorage.getItem('token');
+
     useEffect(() => {
         const fetchTransactions = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/transactions`);
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/transactions`, {
+                    headers: { Authorization: getToken() }
+                });
                 setTransactions(response.data);
             } catch (error) {
                 console.error('获取交易记录失败', error);

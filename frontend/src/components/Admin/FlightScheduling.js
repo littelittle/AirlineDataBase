@@ -19,21 +19,30 @@ const FlightScheduling = () => {
     const [price, setPrice] = useState('');
     const [discount, setDiscount] = useState('');
     const [adjacentAirports, setAdjacentAirports] = useState([]);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    const getToken = () => localStorage.getItem('token');
 
     const fetchFlights = async () => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights`, {
+                headers: { Authorization: getToken() }
+            });
             setFlights(response.data);
         } catch (error) {
-            console.error('获取航班数据失败:', error);
+            setError('获取航班信息失败');
         }
     };
 
     const fetchStops = async (flightId) => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights/${flightId}/airports`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/flights/${flightId}/airports`, {
+                headers: { Authorization: getToken() }
+            });
+            console.log('Raw stops response:', response.data);
             const sorted = response.data.sort((a, b) => a.StopOrder - b.StopOrder);
+            console.log('Sorted stops:', sorted);
             setStops(sorted);
             setSortedStops(sorted.map(item => item.AirportCode));
             console.log('Sorted Stops:', sortedStops);
@@ -45,7 +54,9 @@ const FlightScheduling = () => {
 
     const fetchProducts = async (flightId) => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/products/${flightId}`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/products/${flightId}`, {
+                headers: { Authorization: getToken() }
+            });
             setProducts(response.data);
         } catch (error) {
             console.error('获取产品数据失败:', error);
@@ -54,7 +65,9 @@ const FlightScheduling = () => {
 
     const fetchAirports = async () =>{
         try{
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/airports`);
+            const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/airports`, {
+                headers: { Authorization: getToken() }
+            });
             setAirports(response.data);
         } catch (error) {
             console.error('获取机场数据失败', error);
@@ -93,6 +106,8 @@ const FlightScheduling = () => {
                 cabinClass,
                 price: parseFloat(price),
                 discount: parseFloat(discount)
+            }, {
+                headers: { Authorization: getToken() }
             });
             alert('产品添加成功');
             fetchProducts(selectedFlight.FlightID);
@@ -109,11 +124,10 @@ const FlightScheduling = () => {
 
         try {
             await axios.post(`${process.env.REACT_APP_API_URL}/api/admin/flights/${selectedFlight.FlightID}/airports`, {
-                // FlightID: selectedFlight.FlightID,
-                // AirportCode: newAirport,
-                // StopOrder: newStopId
                 OriginalStops: stops.map(stop => stop.AirportCode),
                 ModifiedStops: sortedStops
+            }, {
+                headers: { Authorization: getToken() }
             });
             alert('经停机场修改成功！'); 
             fetchStops(selectedFlight.FlightID);
@@ -145,6 +159,8 @@ const FlightScheduling = () => {
                 cabinClass,
                 price: parseFloat(price),
                 discount: parseFloat(discount)
+            }, {
+                headers: { Authorization: getToken() }
             });
             alert('产品更新成功');
             fetchProducts(selectedFlight.FlightID);
@@ -159,13 +175,31 @@ const FlightScheduling = () => {
     const handleDeleteProduct = async (productId) => {
         if (window.confirm('确认删除此产品？')) {
             try {
-                await axios.delete(`${process.env.REACT_APP_API_URL}/api/admin/delete-product/${productId}`);
+                await axios.delete(`${process.env.REACT_APP_API_URL}/api/admin/delete-product/${productId}`, {
+                    headers: { Authorization: getToken() }
+                });
                 alert('产品删除成功');
                 fetchProducts(selectedFlight.FlightID);
             } catch (error) {
                 console.error('删除产品失败:', error);
                 alert('删除产品失败，请稍后重试');
             }
+        }
+    };
+
+    const handleDeleteFlight = async (flightId) => {
+        if (!window.confirm('确定要删除该航班吗？')) return;
+        try {
+            await axios.delete(
+                `${process.env.REACT_APP_API_URL}/api/admin/flights/${flightId}`,
+                { headers: { Authorization: getToken() } }
+            );
+            fetchFlights();
+        } catch (error) {
+            // Show backend error message if available
+            const msg = error?.response?.data?.error || '删除航班失败';
+            alert(msg);
+            setError(msg);
         }
     };
 
@@ -233,6 +267,7 @@ const FlightScheduling = () => {
                                     <TableCell>{flight.AircraftType}</TableCell>
                                     <TableCell>
                                         <Button onClick={() => handleEditFlight(flight)} color="primary">编辑</Button>
+                                        <Button onClick={() => handleDeleteFlight(flight.FlightID)} color="secondary" sx={{ ml: 1 }}>删除</Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
