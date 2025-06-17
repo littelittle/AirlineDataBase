@@ -85,30 +85,31 @@ def get_same_flight_products():
         flight_id = flight['FlightID']
         StartOrder = flight['StartAirportStopOrder']
         EndOrder = flight['EndAirportStopOrder']
-        current_aiport = flight['StartAirportCode']
+        current_airport = flight['StartAirportCode']
         end_airport = flight['EndAirportCode']
-        AirportCodeList.append(current_aiport)
+        AirportCodeList.append(current_airport)
         for next_order in range(StartOrder + 1, EndOrder + 1):
             next_airport = FlightAirport.get_airportid(flight_id, next_order)[0]['AirportCode']
             AirportCodeList.append(next_airport)
             if not next_airport:
                 PriceIDList = None
                 break
-            print(start_airport, next_airport, flight_id)
-            Product = CabinPricing.query_PricingID_by_airports_flight(start_airport, next_airport, flight_id)[0]
+            print(current_airport, next_airport, flight_id)
+            Product = CabinPricing.query_PricingID_by_airports_flight(current_airport, next_airport, flight_id)[0]
+            # print(f"Product: {Product}")
             pricingid, price = Product.get('PricingID'), Product.get('Price')
             if pricingid:
                 PriceIDList.append(pricingid)
                 total_price += price
                 PriceList.append(price)
-                start_airport = next_airport
+                current_airport = next_airport
             else:
                 PriceIDList = None
                 break
         if PriceIDList:
             TotalFlightIDList.append({
                 'FlightID': flight_id,
-                'StartAirportCode': current_aiport,
+                'StartAirportCode': start_airport,
                 'EndAirportCode': end_airport,
                 'PricingIDs': PriceIDList,
                 'TotalPrice': total_price,

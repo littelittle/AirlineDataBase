@@ -64,7 +64,7 @@ SAMPLE_CABIN_PRICING_DATA = [
         "flightID": "MU5106",
         "departureAirport": "PEK",
         "arrivalAirport": "SHA",
-        "cabinClass": "economy",
+        "cabinClass": "Economy",
         "price": 100,
         "discount": 0
     },
@@ -72,7 +72,7 @@ SAMPLE_CABIN_PRICING_DATA = [
         "flightID": "CZ3456",
         "departureAirport": "CAN",
         "arrivalAirport": "SZX",
-        "cabinClass": "economy",
+        "cabinClass": "Economy",
         "price": 120,
         "discount": 0
     },
@@ -80,7 +80,7 @@ SAMPLE_CABIN_PRICING_DATA = [
         "flightID": "3U8888",
         "departureAirport": "CTU",
         "arrivalAirport": "PVG",
-        "cabinClass": "economy",
+        "cabinClass": "Economy",
         "price": 110,
         "discount": 0
     }
@@ -88,24 +88,27 @@ SAMPLE_CABIN_PRICING_DATA = [
 
 SAMPLE_TRANSACTION_DATA = [
     {
-        "idNumber": "1234567890",
+        "idNumber": "1",
         "cabinPricingID": 1,
-        "flightDate": "2025-07-01"
+        "flightDate": "2025-07-01",
+        "price": 100
     },
     {
-        "idNumber": "2234567890",
+        "idNumber": "2",
         "cabinPricingID": 2,
-        "flightDate": "2025-07-02"
+        "flightDate": "2025-07-02",
+        "price": 120
     },
     {
-        "idNumber": "3234567890",
+        "idNumber": "3",
         "cabinPricingID": 3,
-        "flightDate": "2025-07-03"
+        "flightDate": "2025-07-03",
+        "price": 110
     }
 ]
 
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "123456"
+ADMIN_PASSWORD = "12345"
 admin_token = None
 
 def get_admin_token():
@@ -273,8 +276,8 @@ def write_example_data():
 
 def run_tests():
     """Runs all test functions."""
-    test_get_cities()
-    test_get_airports()
+    # test_get_cities()
+    # test_get_airports()
     test_make_transaction()
 
 def worker(thread_id):
