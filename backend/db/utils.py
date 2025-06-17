@@ -1,6 +1,8 @@
 import hashlib
 import os
 import pyrootutils
+import jwt
+import datetime
 root = pyrootutils.setup_root(
     search_from=__file__,
     indicator=["pyproject.toml"],
@@ -23,24 +25,34 @@ def verify_password(stored_password_hash, provided_password, salt):
     """Verifies a provided password against a stored hash and salt."""
     return stored_password_hash == hash_password(provided_password, salt)
 
+JWT_SECRET = 'THIS_IS_A_DEMO_SECRET_KEY_CHANGE_ME'
+JWT_ALGORITHM = 'HS256'
+JWT_EXP_DELTA_SECONDS = 60 * 60 * 24  # 24 hours
+
 def generate_jwt_token(passenger_id, username, role):
-    # TODO: This is NOT a secure token. Replace with actual JWT generation.
-    return f"toy_token_for_user_{username}_id_{passenger_id}_role_{role}"
+    """
+    Generate a JWT token for the user with expiration.
+    """
+    payload = {
+        'passenger_id': passenger_id,
+        'username': username,
+        'role': role,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=JWT_EXP_DELTA_SECONDS)
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    # PyJWT >= 2.x returns a str, <2.x returns bytes
+    if isinstance(token, bytes):
+        token = token.decode('utf-8')
+    return token
 
 def verify_token(token):
     """
-    Dummy token verification. Replace with real JWT or session validation.
-    Returns a dict like {'role': 'admin'} if valid, else None.
+    Verify a JWT token and return the payload if valid, else None.
     """
-    # Example: parse your toy token
-    if token.startswith("toy_token_for_user_"):
-        # crude parsing, for demonstration
-        try:
-            parts = token.split("_")
-            username = parts[4]
-            passenger_id = parts[6]
-            role = parts[8]
-            return {"username": username, "passenger_id": passenger_id, "role": role}
-        except Exception:
-            return None
-    return None
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
