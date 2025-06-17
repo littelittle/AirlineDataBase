@@ -260,6 +260,17 @@ class FlightAirport:
             print(f"删除经停机场时出错: {e}")
         finally:
             conn.close()
+    
+    @staticmethod
+    def get_airportid(flight_id, stop_order):
+        """获取航班的所有经停机场"""
+        conn = get_db_connection()
+        query = "SELECT FA.AirportCode AS AirportCode FROM Flight_Airport AS FA WHERE FlightID = %s AND StopOrder = %s"
+        params = (flight_id, stop_order)
+        airports = fetch_query(conn, query, params)
+        conn.close()
+        airport_list = [dict(airport) for airport in airports]
+        return airport_list
 
 # ====================== 舱位定价 ======================
 class CabinPricing:
@@ -339,7 +350,7 @@ class CabinPricing:
 
     @staticmethod
     def query_pricing_by_airports_week(departure_airport_id, arrival_airport_id, weekday):
-        """按起降机场查询定价（带异常处理）"""
+        """按起降机场以及日期查询定价以及余量（带异常处理）"""
         conn = get_db_connection()
         query = """
         SELECT cp.*, f.FlightID, f.WeeklyFlightDays, a_dep.Name AS DepartureAirportName, a_arr.Name AS ArrivalAirportName
@@ -354,6 +365,80 @@ class CabinPricing:
             return fetch_query(conn, query, params)
         except Exception as e:
             print(f"按机场查询定价失败: {e}")
+            raise
+
+    @staticmethod
+    def query_PricingID_by_airports_flight(departure_airport_id, arrival_airport_id, flight_id):
+        """根据flight_id按起降机场查询产品ID"""
+        conn = get_db_connection()
+        query = """
+        SELECT cp.PricingID, cp.Price*(1-0.01*cp.DiscountRate) AS Price
+        FROM CabinPricing cp
+        JOIN Flight f ON cp.FlightID = f.FlightID
+        JOIN Airport a_dep ON cp.DepartureAirportID = a_dep.AirportCode
+        JOIN Airport a_arr ON cp.ArrivalAirportID = a_arr.AirportCode
+        WHERE cp.DepartureAirportID = %s AND cp.ArrivalAirportID = %s AND f.FlightID = %s AND cp.CabinLevel='Economy'
+        """
+        params = (departure_airport_id, arrival_airport_id, flight_id)
+        try:
+            return fetch_query(conn, query, params)
+        except Exception as e:
+            print(f"按机场查询定价失败: {e}")
+            raise
+
+    @staticmethod
+    def get_remaining_seats_by_date(CabinPricingID, date):
+        """获取指定日期的剩余座位数（带异常处理）"""
+        conn = get_db_connection()
+        query = """
+        SELECT
+        case when cp.CabinLevel='Firstclass' then f.FirstClassSeats-COUNT(ts.TicketSaleID) 
+             when cp.CabinLevel='Economy' then f.EconomySeats-COUNT(ts.TicketSaleID)
+             else 0 end
+        AS RemainingSeats
+        FROM CabinPricing cp
+        JOIN Flight f ON cp.FlightID = f.FlightID
+        LEFT JOIN TicketSale ts ON cp.PricingID = ts.CabinPricingID AND ts.FlightDate = %s
+        WHERE cp.PricingID = %s
+        GROUP BY cp.PricingID, cp.CabinLevel, f.FirstClassSeats, f.EconomySeats
+        """
+        params = (date, CabinPricingID)
+        try:
+            return fetch_query(conn, query, params)
+        except Exception as e:
+            print(f"查询剩余座位失败: {e}")
+            raise
+
+    @staticmethod
+    def get_flight_and_stoporders_by_airports(start_airport_id, end_airport_id, weekday):
+        """获取起降机场之间的航班号和经停机场顺序"""
+        conn = get_db_connection()
+        query = """
+        SELECT
+            fa.FlightID AS FlightID,
+            fa.StopOrder AS StartAirportStopOrder,
+            fb.StopOrder AS EndAirportStopOrder,
+            fa.AirportCode AS StartAirportCode,
+            fb.AirportCode AS EndAirportCode
+        FROM
+            Flight_Airport fa
+        JOIN
+            Flight_Airport fb
+        ON
+            fa.FlightID = fb.FlightID
+        JOIN
+            Flight f ON fa.FlightID = f.FlightID
+        WHERE
+            fa.AirportCode = %s
+            AND fb.AirportCode = %s
+            AND fa.StopOrder+1 < fb.StopOrder
+            AND f.WeeklyFlightDays LIKE %s;
+        """
+        params = (start_airport_id, end_airport_id, f'%{weekday}%')
+        try:
+            return fetch_query(conn, query, params)
+        except Exception as e:
+            print(f"查询航班和经停机场失败: {e}")
             raise
 
 # ====================== 乘客相关 ======================

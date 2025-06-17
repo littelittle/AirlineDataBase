@@ -207,9 +207,11 @@ BEGIN
     FROM TicketSale ts
     JOIN CabinPricing cp ON ts.CabinPricingID = cp.PricingID
     WHERE ts.PassengerID = p_PassengerID
-      AND cp.FlightID = v_FlightID
-      AND ts.FlightDate = p_FlightDate
-      AND ((cp.DepartureAirportID = v_DepartureAirportID) OR (cp.ArrivalAirportID = v_ArrivalAirportID));
+        AND ts.FlightDate = p_FlightDate
+        AND ts.CabinPricingID = p_CabinPricingID;
+    --   AND cp.FlightID = v_FlightID
+    --   AND ts.FlightDate = p_FlightDate
+    --   AND ((cp.DepartureAirportID = v_DepartureAirportID) OR (cp.ArrivalAirportID = v_ArrivalAirportID));
 
     -- 如果查询到记录数大于0，说明已购买，则抛出错误
     IF v_ExistingTickets > 0 THEN

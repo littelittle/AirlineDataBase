@@ -8,6 +8,7 @@ import ProfilePage from '../components/Passenger/Profile';
 
 import { Typography, Box } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import AdvancedTransaction from '../components/Passenger/AdvancedTransaction';
 
 const PassengerPage = () => {
   const {auth} = useAuth();
@@ -21,6 +22,7 @@ const PassengerPage = () => {
         <Route path="search" element={<AirportSelection />} />
         <Route path="products" element={<ProductQuery />} />
         <Route path="transaction/:productId/:weeklyFlightDays" element={<Transaction />} />
+        <Route path="advancedtransaction/:weeklyFlightDays" element={<AdvancedTransaction />} />
         <Route path="tickets" element={<TransactionQuery />} />
         <Route path="profile" element={<ProfilePage />} />
       </Routes>

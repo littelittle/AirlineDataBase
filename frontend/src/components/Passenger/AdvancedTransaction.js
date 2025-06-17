@@ -4,54 +4,28 @@ import axios from 'axios';
 import { Box, Typography, TextField, Button, Alert } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 
-const Transaction = () => {
-    const { productId, weeklyFlightDays: encodedWeeklyFlightDays } = useParams();
+const AdvancedTransaction = () => {
+    const { weeklyFlightDays: encodedWeeklyFlightDays } = useParams();
     // const [idNumber, setIdNumber] = useState('');
     // const [passengerName, setPassengerName] = useState('');
     const {state}  = useLocation();
     const [flightDate, setFlightDate] = useState(state?.flightDate || '');
-    const [remainingTickets, setRemainingTickets] = useState(0);
-    const price = state?.price || 0;
+    // const [remainingTickets, setRemainingTickets] = useState(0);
+    const totalprice = state?.totalprice || 0;
+    const productId = state?.productIds || [];
+    const prices = state?.prices || [];
     const [error, setError] = useState(null);
     const { auth } = useAuth();
     const navigate = useNavigate();
 
     const weeklyFlightDays = decodeURIComponent(encodedWeeklyFlightDays || '').split(',').map(day => day.trim());
 
-    useEffect(() => {
-        const fetchRemainingTickets = async () => {
-            if (!weeklyFlightDays.includes(getDayOfWeekString(flightDate))){
-                setError('所选日期不在航班运行日内，请选择其他日期！');
-                setRemainingTickets(0);
-                return;
-            }
-            if (flightDate){
-                try{
-                    const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/passenger/products/get_remaining`, {
-                        params: { cabinPricingID: productId, date: flightDate }
-                        }
-                    );
-                    console.log('获取余票请求', response.data);
-                    if (response.data.RemainingSeats !== undefined) {
-                        if (response.data.RemainingSeats <= 0) {
-                            setError('该航班已无余票，请选择其他日期或航班！');
-                        } else {
-                            console.log('获取余票成功', response.data);
-                            setRemainingTickets(response.data.RemainingSeats);
-                            setError(null);
-                        }
-                    } else {
-                        setError('获取余票信息失败，请稍后再试！');
-                        console.error('获取余票信息格式不正确', response.data);
-                    }
-                } catch (error) {
-                    console.error('获取余票失败', error);
-                    setError('获取余票信息失败：' + (error.response?.data?.error || error.message));
-                }
-            }
-        }
-        fetchRemainingTickets();
-    }, [flightDate]);
+    // useEffect(() => {
+    //     const fetchRemainingTickets = async () => {
+            
+    //     }
+    //     fetchRemainingTickets();
+    // }, [flightDate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -59,20 +33,20 @@ const Transaction = () => {
             setError('请填写日期！');
             return;
         }
-        if (!weeklyFlightDays.includes(getDayOfWeekString(flightDate))) {
-            setError('所选日期不在航班运行日内！');
-            return;
-        }
-        if (!price || price <= 0) {
+        // if (!weeklyFlightDays.includes(getDayOfWeekString(flightDate))) {
+        //     setError('所选日期不在航班运行日内！');
+        //     return;
+        // }
+        if (!totalprice || totalprice <= 0) {
             setError('价格无效，请检查产品信息！');
             return;
         }
         try {
-            await axios.post(`${process.env.REACT_APP_API_URL}/api/passenger/transaction`, {
+            await axios.post(`${process.env.REACT_APP_API_URL}/api/passenger/advancedtransaction`, {
                 idNumber:auth.idNumber,
                 cabinPricingID: productId,
                 flightDate,
-                price,
+                prices,
             });
             alert('交易成功');
             navigate('/passenger/tickets');
@@ -98,9 +72,9 @@ const Transaction = () => {
 
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>预订航班 (产品 ID: {productId})</Typography>
+            <Typography variant="h6" gutterBottom>预订航班 (产品 ID组合: {productId.join(', ' )})</Typography>
             <Typography variant="h6" gutterBottom>航班飞行日: | {weeklyFlightDays.join(' | ')} |</Typography>
-            <Typography variant="h6" gutterBottom>剩余票数: {remainingTickets}</Typography>
+            {/* <Typography variant="h6" gutterBottom>剩余票数: {remainingTickets}</Typography> */}
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <Box component="form" onSubmit={handleSubmit}>
                 <TextField
@@ -115,14 +89,27 @@ const Transaction = () => {
                     inputProps={{min:getMinDate(),}}
                 />
                 <Typography variant="h6" sx={{ mt: 2 }}>
-                    总金额: ¥{price.toFixed(2)}
+                    总金额: ¥{parseFloat(totalprice).toFixed(2)}
                 </Typography>
-                <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
+                <Box
+                    sx={{
+                    display: 'flex',
+                    flexDirection: 'column', // 让按钮垂直堆叠
+                    gap: 2, // 在按钮之间增加间距
+                    mt: 2, // 确保按钮组与上方元素有适当间距
+                    maxWidth: '100px'
+                    }}
+                >
+                    <Button type="submit" variant="contained" color="primary">
                     确认购买
-                </Button>
+                    </Button>
+                    <Button variant="outlined" onClick={() => navigate(-1)}>
+                    返回
+                    </Button>
+                </Box>
             </Box>
         </Box>
     );
 };
 
-export default Transaction;
+export default AdvancedTransaction;
