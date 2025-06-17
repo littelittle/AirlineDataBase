@@ -6,7 +6,7 @@ import os
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    # 'password': "111111",
+    'password': os.getenv('DBPassword'),
     'database': 'AirlineDB',
     'charset': 'utf8mb4'
 }
