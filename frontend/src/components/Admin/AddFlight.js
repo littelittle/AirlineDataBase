@@ -88,7 +88,7 @@ const AddFlight = () => {
             WeeklyFlightDays: selectedDays.join(', '), // 将选中的周飞行日转换为逗号分隔的字符串
             // 将航线机场列表转换为后端需要的格式，并附上顺序
             stops: stops.map((stop, index) => ({
-                airportCode: stop.AirportCode,
+                AirportCode: stop.AirportCode,
                 stopOrder: index + 1
             }))
         };
