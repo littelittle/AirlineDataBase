@@ -6,7 +6,7 @@ import os
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': os.environ.get('DBPassword'),
+    # 'password': "111111",
     'database': 'AirlineDB',
     'charset': 'utf8mb4'
 }
@@ -43,6 +43,19 @@ def fetch_query(conn, query, params=None):
         return cursor.fetchall()
     except Error as e:
         print(f"查询数据失败: {e}")
+        raise
+    finally:
+        cursor.close()
+
+def execute_many(conn, query, params_list=None):
+    """批量执行 SQL 查询（如批量插入）"""
+    try:
+        cursor = conn.cursor()
+        cursor.executemany(query, params_list or [])
+        conn.commit()
+    except Error as e:
+        print(f"批量执行查询失败: {e}")
+        conn.rollback()
         raise
     finally:
         cursor.close()

@@ -31,19 +31,22 @@ export function AuthProvider({ children }) {
         token: userData.token,
         username: userData.username // Store username
       };
-      console.error("登录成功，用户数据:", authData.role);
       localStorage.setItem('auth', JSON.stringify(authData));
+      // Also store token separately for easy access in API calls
+      if (userData.token) {
+        localStorage.setItem('token', userData.token);
+      }
       setAuth(authData);
       return { success: true, role: userData.role }; // Return role for navigation
     } catch (error) {
-      if (error.response.status===401){
+      if (error.response && error.response.status===401){
         alert(`登录失败：${error.response.data.Error || '用户名或密码不正确'}`);
         return {success: false, message:error.response.data.Error};
       }
       else {
       console.error("登录时发生错误:", error);
-      // Ensure logout on any login error to clear partial state
       localStorage.removeItem('auth');
+      localStorage.removeItem('token');
       setAuth({ isLoggedIn: false, role: null, idNumber: null, token: null, username: null });
       throw error; // Re-throw error to be caught by LoginPage
       }
@@ -53,6 +56,7 @@ export function AuthProvider({ children }) {
   // LOGOUT Function (updated to clear username)
   const logout = () => {
     localStorage.removeItem('auth');
+    localStorage.removeItem('token');
     setAuth({ isLoggedIn: false, role: null, idNumber: null, token: null, username: null });
   };
 

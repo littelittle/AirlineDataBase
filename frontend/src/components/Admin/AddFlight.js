@@ -18,13 +18,15 @@ const AddFlight = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
+    const getToken = () => localStorage.getItem('token');
+
     // 组件加载时获取所有机场数据
     useEffect(() => {
         const fetchAirports = async () => {
             try {
-                // 这个接口需要后端提供，返回所有机场的列表
-                // [{ AirportCode: 'PEK', Name: '北京首都国际机场' }, ...]
-                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/airports`);
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/airports`, {
+                    headers: { Authorization: getToken() }
+                });
                 setAllAirports(response.data);
             } catch (error) {
                 console.error('获取机场数据失败:', error);
@@ -93,7 +95,11 @@ const AddFlight = () => {
 
         try {
             // 调用后端创建航班的API
-            const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/admin/flights`, newFlightData);
+            const response = await axios.post(
+                `${process.env.REACT_APP_API_URL}/api/admin/flights`,
+                newFlightData,
+                { headers: { Authorization: getToken() } }
+            );
             // console.log('创建航班数据:', newFlightData);
             if (response.status !== 201) {
                 throw new Error(`创建航班失败，${response.statusText}`);
