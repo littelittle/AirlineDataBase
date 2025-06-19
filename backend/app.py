@@ -22,9 +22,7 @@ app.register_blueprint(admin_api, url_prefix='/api/admin')
 app.register_blueprint(passenger_api, url_prefix='/api/passenger')
 app.register_blueprint(auth_api, url_prefix='/api/auth')
 
-Passenger.ensure_admin_exists()
-
-
 if __name__ == '__main__': 
+    Passenger.ensure_admin_exists()
     app.config['DEBUG'] = True  # 开启调试模式
     app.run(host='0.0.0.0', port=5000, debug=True)

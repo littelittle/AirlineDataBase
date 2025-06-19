@@ -28,8 +28,6 @@ npm start
 Runs the app in the development mode.
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-The page will reload when you make changes.
-You may also see any lint errors in the console.
 
 ### run the backend
 
@@ -40,7 +38,7 @@ Set your password in
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'YourPassword',# Use Your Password
+    'password': os.getenv('DBPassword'),# Use Your Password
     'database': 'AirlineDB',
     'charset': 'utf8mb4'
 }
@@ -86,6 +84,7 @@ The concurrent test script simulates multiple users making transactions at the s
 - `--requests`, `-r`: Number of requests per thread (per user). Default: 7
 - `--clear`, `-c`: If set, clear the database before running the test (dangerous!). Default: not set
 - `--verbose`, `-v`: If set, print detailed output for each request. Default: not set (only summary is printed)
+- `--password`, `-p`: Password of admin. default: 123456
 
 **Usage examples:**
 

@@ -7,7 +7,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
     'password': os.getenv('DBPassword'),
-    'database': 'AirlineDB_temp',
+    'database': 'AirlineDB',
     'charset': 'utf8mb4'
 }
 

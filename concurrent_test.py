@@ -15,11 +15,14 @@ parser.add_argument('--threads', '-t', type=int, default=10, help='Number of con
 parser.add_argument('--requests', '-r', type=int, default=7, help='Number of requests per thread (default: 7)')
 parser.add_argument('--clear', '-c', action='store_true', help='Clear the database before running the test (default: False)')
 parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output (default: False)')
+parser.add_argument('--password', '-p', type=str, default='123456', help='Password for admin account, change this to your own password (default: 123456)')
+
 args, unknown = parser.parse_known_args()
 NUM_THREADS = args.threads
 NUM_REQUESTS_PER_THREAD = args.requests
 CLEAR_DB_BEFORE_TEST = args.clear
 VERBOSE = args.verbose
+
 
 if VERBOSE:
     vprint = print
@@ -169,7 +172,7 @@ SAMPLE_CABIN_PRICING_DATA = [
 
 
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "123456"
+ADMIN_PASSWORD = args.password  # Use the password provided via command line argument
 admin_token = None
 
 PASSENGER_PASSWORD = "123456"
