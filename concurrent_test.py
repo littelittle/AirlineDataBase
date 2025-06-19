@@ -11,7 +11,7 @@ import argparse
 
 # Configuration
 parser = argparse.ArgumentParser(description="Concurrent API test runner")
-parser.add_argument('--threads', '-t', type=int, default=100, help='Number of concurrent threads (default: 100)')
+parser.add_argument('--threads', '-t', type=int, default=10, help='Number of concurrent threads (default: 10)')
 parser.add_argument('--requests', '-r', type=int, default=7, help='Number of requests per thread (default: 7)')
 parser.add_argument('--clear', '-c', action='store_true', help='Clear the database before running the test (default: False)')
 parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output (default: False)')

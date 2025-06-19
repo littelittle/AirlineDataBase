@@ -34,12 +34,14 @@ def login(): # Make sure this function is correctly routed by your Flask app
             salt=passenger_data['salt']
         )
 
+        print(f"Password verification for {username}: {is_password_valid}")
+
         if is_password_valid: 
             username = passenger_data['PassengerName']
             role = 'admin' if username == 'admin' else 'passenger'
             # Password is correct, generate a token 
             token = generate_jwt_token(passenger_data['PassengerID'], passenger_data['PassengerName'], role)
-            
+            print(f"token is {token}")
             response = {
                 "role": role, # if username is not admin, set role to passenger
                 "PassengerID": str(passenger_data['PassengerID']), # Use PassengerID(the primary key) as PassengerID

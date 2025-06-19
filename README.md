@@ -57,7 +57,7 @@ flask run
 
 ## open the websites
 
-temporary websites `http://localhost:3000/admin` and `http://localhost:3000/passenger`
+`http://localhost:3000` 
 
 ### connection issues
 
@@ -90,7 +90,7 @@ The concurrent test script simulates multiple users making transactions at the s
 **Usage examples:**
 
 ```bash
-# Basic usage (default: 100 threads, 7 requests per thread, no clear, summary only)
+# Basic usage (default: 10 threads, 7 requests per thread, no clear, summary only)
 python concurrent_test.py
 
 # Specify number of threads and requests per thread

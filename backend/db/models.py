@@ -619,6 +619,7 @@ class Passenger:
     def ensure_admin_exists():
         """确保管理员账号存在，并重置密码为默认值"""
         admin = Passenger.get_passenger_by_name('admin')
+        print(f"Admin user exists: {admin is not None}")
         # breakpoint()
         if not admin:
             # 创建管理员账号
