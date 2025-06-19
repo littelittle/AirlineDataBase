@@ -55,8 +55,7 @@ flask run
 
 ## open the websites
 
-enter `http://localhost:3000`
-You can log in to the Airline Management page by registering an account named admin, and log in to the Passenger page by registering any other username. If you have run concurrent tests using the concurrent_test.py script(see instruction below) before, the system will create an admin account based on the password you passed in (default: 123456). 
+You can log in to the Airline Management page by registering an account named admin, and log in to the Passenger page by registering any other username. If you have run concurrent tests using the concurrent_test.py script(see instruction below) before, the system will create an admin account based on the password you passed in (default: 123456).
 
 ### potential connection issues
 
