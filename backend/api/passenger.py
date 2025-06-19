@@ -128,19 +128,20 @@ def get_same_flight_products():
 
 # ====================== 购买产品（创建交易） ======================
 @passenger_api.route('/transaction', methods=['POST'])
-def make_transaction():
+def make_transaction(): 
+    # breakpoint()
     data = request.get_json()
-    required_fields = ['idNumber', 'cabinPricingID', 'flightDate', 'price']
+    required_fields = ['PassengerID', 'cabinPricingID', 'flightDate', 'price']
     if not all(field in data for field in required_fields):
         print("缺少必要字段:", data)
         return jsonify({"error": "缺少必要字段"}), 400
 
     try:
         # passenger_id = Passenger.get_or_create_passenger(
-        #     data['idNumber'],
+        #     data['PassengerID'],
         #     data['passengerName']
         # )
-        passenger_id = data['idNumber']
+        passenger_id = data['PassengerID']
         TicketSale.create_ticket_sale(
             passenger_id,
             data['cabinPricingID'],
@@ -157,13 +158,13 @@ def make_transaction():
 @passenger_api.route('/advancedtransaction', methods=['POST'])
 def make_advancedtransaction():
     data = request.get_json()
-    required_fields = ['idNumber', 'cabinPricingID', 'flightDate', 'prices']
+    required_fields = ['PassengerID', 'cabinPricingID', 'flightDate', 'prices']
     if not all(field in data for field in required_fields):
         print("缺少必要字段:", data)
         return jsonify({"error": "缺少必要字段"}), 400
 
     try:
-        passenger_id = data['idNumber']
+        passenger_id = data['PassengerID']
         pricingids = data['cabinPricingID']
         prices = data['prices']
         for pricingid in pricingids:
@@ -208,5 +209,52 @@ def query_transactions():
         transactions = TicketSale.get_transactions_by_passenger(id_number)
         # print(f'查询到的交易记录: {transactions}')
         return jsonify(transactions), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@passenger_api.route('/get-passenger-id', methods=['GET'])
+def get_passenger_id_by_name():
+    """
+    Return the passenger_id based on the current passenger name (query param: passengerName)
+    """
+    passenger_name = request.args.get('passengerName')
+    if not passenger_name:
+        return jsonify({"error": "请提供乘客姓名 (passengerName)"}), 400
+    try:
+        passenger = Passenger.get_passenger_by_name(passenger_name)
+        if not passenger:
+            return jsonify({"error": "未找到该乘客信息"}), 404
+        return jsonify({
+            "passenger_id": passenger.get("PassengerID")
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@passenger_api.route('/all-cabin-pricing', methods=['GET'])
+def get_all_cabin_pricing():
+    """
+    Return all available cabin pricing information, including PricingID, FlightID, DepartureAirportID, ArrivalAirportID, CabinLevel, Price, DiscountRate.
+    """
+    try:
+        from db.models import CabinPricing, Flight
+        flights = Flight.get_all_flights()
+        all_pricings = []
+        for flight in flights:
+            flight_id = flight.get('FlightID')
+            if flight_id:
+                pricings = CabinPricing.get_all_pricings(flight_id)
+                if pricings:
+                    for p in pricings:
+                        # Only include relevant fields
+                        all_pricings.append({
+                            'PricingID': p.get('PricingID'),
+                            'FlightID': p.get('FlightID'),
+                            'DepartureAirportID': p.get('DepartureAirportID'),
+                            'ArrivalAirportID': p.get('ArrivalAirportID'),
+                            'CabinLevel': p.get('CabinLevel'),
+                            'Price': p.get('Price'),
+                            'DiscountRate': p.get('DiscountRate')
+                        })
+        return jsonify(all_pricings), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

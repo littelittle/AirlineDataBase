@@ -1,7 +1,7 @@
 import traceback
 
-from db.db_manager import execute_query,execute_many, fetch_query, get_db_connection
-from db.utils import *
+from .db_manager import execute_query,execute_many, fetch_query, get_db_connection
+from .utils import *
 
 # ====================== 城市 ======================
 class City:
@@ -549,7 +549,7 @@ class Passenger:
                 conn.close()
 
     @staticmethod
-    def get_profile(passnger_id):
+    def get_profile(passenger_id):
         "根据passenger id获取用户全部信息"
         conn = None
         try:
@@ -559,7 +559,7 @@ class Passenger:
                 FROM Passenger
                 WHERE PassengerID = %s
             """
-            params = (passnger_id,)
+            params = (passenger_id,)
             result = fetch_query(conn, query, params) # fetch_query should return a list of dicts
             if result:
                 return result 
@@ -616,17 +616,19 @@ class Passenger:
                 conn.close()
 
     @staticmethod
-    def ensure_admin_exists():
+    def ensure_admin_exists(password:str="123456"):
         """确保管理员账号存在，并重置密码为默认值"""
         admin = Passenger.get_passenger_by_name('admin')
+        print(f"Admin user exists: {admin is not None}")
+        # breakpoint()
         if not admin:
             # 创建管理员账号
-            Passenger.create_passenger_with_password('admin', '123456')
-            print("Admin user created with default password '123456'.")
+            Passenger.create_passenger_with_password('admin', password)
+            print(f"Admin user created with default password {password}.")
         else:
             # 重置管理员密码为默认值
-            Passenger.update_passenger_password('admin', '123456')
-            print("Admin user password reset to default '123456'.")
+            Passenger.update_passenger_password('admin', password)
+            print(f"Admin user password reset to default {password}.")
 
 
 # ====================== 售票记录 ======================

@@ -13,7 +13,7 @@ def login(): # Make sure this function is correctly routed by your Flask app
     """
     Handles passenger login.
     Expects 'username' and 'password' as query parameters.
-    Returns { role, idNumber, token, username } on success.
+    Returns { role, PassengerID, token, username } on success.
     """
     username = request.args.get('username')
     password = request.args.get('password')
@@ -34,15 +34,17 @@ def login(): # Make sure this function is correctly routed by your Flask app
             salt=passenger_data['salt']
         )
 
+        print(f"Password verification for {username}: {is_password_valid}")
+
         if is_password_valid: 
             username = passenger_data['PassengerName']
             role = 'admin' if username == 'admin' else 'passenger'
             # Password is correct, generate a token 
             token = generate_jwt_token(passenger_data['PassengerID'], passenger_data['PassengerName'], role)
-            
+            print(f"token is {token}")
             response = {
                 "role": role, # if username is not admin, set role to passenger
-                "idNumber": str(passenger_data['PassengerID']), # Use PassengerID(the primary key) as idNumber
+                "PassengerID": str(passenger_data['PassengerID']), # Use PassengerID(the primary key) as PassengerID
                 "token": token,
                 "username": passenger_data['PassengerName']
             }
@@ -60,7 +62,7 @@ def register(): # Make sure this function is correctly routed by your Flask app
     """
     Handles passenger login.
     Expects 'username' and 'password' as query parameters.
-    Returns { role, idNumber, token, username } on success.
+    Returns { role, PassengerID, token, username } on success.
     """
     username = request.args.get('username')
     password = request.args.get('password')
