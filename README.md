@@ -28,7 +28,6 @@ npm start
 Runs the app in the development mode.
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-
 ### run the backend
 
 Set your password in
@@ -106,3 +105,7 @@ python concurrent_test.py -t 10 -r 3 -v
 - Note that when number of requests per thread exceeds the number of products, the exceeded requests will 100% fail.
 - If `-c`/`--clear` is set, the script will clear all data in the database at the start of the test (via the `/admin/clear-all` endpoint). **Use with caution!**
 - At the end of the test, the script will print the total number of transaction requests and the number of failed transaction requests.
+
+### SQL dump file
+
+You can set up an empty Airline Ticketing System database using its schema creation scripts (recommended). Alternatively, you can use the SQL dump file located at `db\seeds\test_case.sql` to populate a database with existing data. The `root` user's password for local development is **12345**.
