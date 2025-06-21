@@ -109,3 +109,10 @@ python concurrent_test.py -t 10 -r 3 -v
 ### SQL dump file
 
 You can set up an empty Airline Ticketing System database using its schema creation scripts (recommended). Alternatively, you can use the SQL dump file located at `db\seeds\test_case.sql` to populate a database with existing data. The `root` user's password for local development is **12345**.
+
+### Contirbution
+
+- 侯嘉树：注册登录、订购(中转)机票、修改经停等功能实现，代码汇总，项目汇报。
+- 陈豪：实现前端界面与功能，并分流管理员与乘客。
+- 徐亦宸：搭建前端和后端的初步框架，并初步完成管理者的前后端逻辑。
+- 李伟浩：默认创建管理员账号，编写jwt认证系统，保护管理员api，编写并发测试脚本进行测试。
